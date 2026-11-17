@@ -1,0 +1,2276 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Camera Shoot｜以相機為武器的射擊遊戲</title>
+<meta name="theme-color" content="#0d0e11">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Camera Shoot">
+<style>
+*{box-sizing:border-box}
+html,body{overscroll-behavior:none;margin:0;background:#0d0e11;color:#e8e6df;font-family:system-ui,-apple-system,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+body{min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:10px}
+#app{width:100%;max-width:960px}
+h1{font-size:15px;margin:2px 0 8px;font-weight:600;letter-spacing:.04em;color:#c9c5b8}
+h1 small{font-weight:400;color:#7d7a70;margin-left:8px}
+#gameWrap{position:relative;width:min(100%,calc((100vh - 72px)*1.6));width:min(100%,calc((100dvh - 72px)*1.6));margin:0 auto;aspect-ratio:960/600;background:#16181d;border:1px solid #2a2d35;border-radius:8px;overflow:hidden}
+#c{width:100%;height:100%;display:block;cursor:default;touch-action:none}
+.hint{font-size:12px;color:#8a877c;margin:8px 2px;line-height:1.7}
+.hint kbd{background:#23252c;border:1px solid #363a44;border-radius:4px;padding:0 5px;font-size:11px;color:#d6d3c8}
+.hidden{display:none!important}
+.album{grid-column:1/-1}
+.alsum{background:#1e2027;border:1px solid #2f323b;border-radius:8px;padding:10px 12px;margin-bottom:10px;font-size:13px;color:#b9b6aa;line-height:1.7}
+.alsum b{color:#f3f1ea}
+.alth{background:#1b1d23;border:1px solid #2a2d35;border-radius:8px;padding:8px 10px;margin-bottom:8px}
+.alth.done{border-color:#e0a526;box-shadow:0 0 0 1px #e0a52644 inset}
+.alth h4{margin:0 0 6px;font-size:14px;color:#e8e6df;display:flex;justify-content:space-between;gap:8px}
+.alth h4 span{font-weight:400;font-size:12px;color:#8a877c}
+.alth.done h4 span{color:#f0c24a}
+.alrow{display:grid;grid-template-columns:repeat(4,minmax(0,150px));gap:8px;justify-content:start}
+.alc{background:#14161b;border:1px solid #2a2d35;border-radius:6px;padding:6px;text-align:center;font-size:12px;color:#b9b6aa}
+.alc .ph{width:100%;aspect-ratio:1;background:#0c0d10;border-radius:3px;display:flex;align-items:center;justify-content:center;color:#3a3d46;font-size:26px;overflow:hidden;position:relative}
+.alc.got .ph{background:#f3efe4;padding:4px 4px 12px}
+.alc.got .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.alc b{display:block;margin-top:4px;color:#e8e6df;font-weight:600}
+.alc.boss{border-color:#6b3a3a}
+#touch{position:absolute;inset:0;pointer-events:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:none}
+#joyZone{position:absolute;left:0;bottom:0;width:50%;height:70%;pointer-events:auto;touch-action:none}
+#joyBase{position:absolute;width:20%;aspect-ratio:1;max-width:130px;border-radius:50%;background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.25);transform:translate(-50%,-50%);display:none;pointer-events:none}
+#joyKnob{position:absolute;left:50%;top:50%;width:44%;height:44%;border-radius:50%;background:rgba(255,255,255,.35);border:2px solid rgba(255,255,255,.55);transform:translate(-50%,-50%)}
+.tbtn{position:absolute;pointer-events:auto;touch-action:none;border-radius:50%;border:2px solid rgba(255,255,255,.4);background:rgba(224,165,38,.35);color:#fff;font-size:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1}
+.tbtn small{font-size:10px;opacity:.9}
+.tbtn:active{background:rgba(224,165,38,.7)}
+#tFlash{right:3%;bottom:8%;width:17%;max-width:110px;aspect-ratio:1}
+#tReload{right:21%;bottom:5%;width:12%;max-width:78px;aspect-ratio:1;background:rgba(80,140,220,.35)}
+#rotHint{display:none;position:absolute;left:50%;top:6px;transform:translateX(-50%);background:rgba(0,0,0,.6);color:#f0c24a;font-size:11px;padding:3px 8px;border-radius:10px;pointer-events:none;white-space:nowrap}
+@media (orientation:portrait){#touch.on #rotHint{display:block}}
+#over{position:absolute;inset:0;background:rgba(8,8,10,.78);display:flex;align-items:center;justify-content:center}
+#over .box{background:#1a1c22;border:1px solid #3a3e49;border-radius:10px;padding:22px 26px;text-align:center;max-width:90%}
+#over h2{margin:0 0 6px;font-size:20px;color:#ff8a76}
+#over p{margin:4px 0 14px;color:#b9b6aa;font-size:14px}
+button{font:inherit;cursor:pointer}
+.btn{background:#e0a526;color:#1a1304;border:0;border-radius:6px;padding:9px 16px;font-weight:700;font-size:14px}
+.btn:hover{background:#f0b638}
+.btn.ghost{background:#2a2d35;color:#d6d3c8;margin-left:8px}
+.btn.ghost:hover{background:#363a44}
+/* shop */
+#shop{background:#16181d;border:1px solid #2a2d35;border-radius:8px;padding:14px}
+.top{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:10px}
+.gold{font-size:20px;font-weight:700;color:#f0c24a}
+.gold::before{content:"● ";color:#e0a526}
+.load{font-size:13px;color:#b9b6aa;background:#1e2027;border:1px solid #2f323b;border-radius:6px;padding:7px 10px;margin-bottom:10px;line-height:1.7}
+.load b{color:#f3f1ea}
+.tabs{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.tab{background:#22252d;color:#b9b6aa;border:1px solid #30343d;border-radius:6px;padding:7px 14px;font-size:14px}
+.tab.on{background:#e0a526;color:#1a1304;border-color:#e0a526;font-weight:700}
+#list{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
+.item{background:#1e2027;border:1px solid #2f323b;border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:5px}
+.item.eq{border-color:#e0a526;box-shadow:0 0 0 1px #e0a52655 inset}
+.item.own .price{color:#7fc88a}
+.ih{display:flex;gap:10px;align-items:center}
+.ih .it{min-width:0}
+.ico{flex:0 0 132px;height:84px;background:linear-gradient(#2a2d37,#1a1c22);border:1px solid #343845;border-radius:8px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.ico svg{width:128px;height:80px}
+.item.own .ico{border-color:#3b5f45}
+.item.eq .ico{border-color:#e0a526}
+.loadwrap{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.rig{flex:0 0 340px;max-width:100%;background:linear-gradient(#262932,#171920);border:1px solid #343845;border-radius:10px;padding:4px 6px}
+.rig svg{width:100%;height:auto;display:block}
+.ih h3{margin:0;font-size:15px}
+.ih .sub{font-size:12px;color:#8a877c}
+.stat{display:grid;grid-template-columns:62px 1fr 56px;gap:6px;align-items:center;font-size:12px;color:#a9a69a}
+.bar{height:6px;background:#2a2d35;border-radius:3px;overflow:hidden}
+.bar i{display:block;height:100%;background:#e0a526}
+.stat b{text-align:right;color:#e8e6df;font-weight:600}
+.ia{display:flex;justify-content:space-between;align-items:center;margin-top:4px}
+.price{font-weight:700;color:#f0c24a;font-size:14px}
+.ia button{background:#e0a526;color:#1a1304;border:0;border-radius:6px;padding:6px 12px;font-weight:700;font-size:13px}
+.ia button:disabled{background:#2a2d35;color:#6d6a60;cursor:not-allowed}
+.note{font-size:11.5px;color:#9a8a6a}
+#msg{min-height:20px;margin-top:10px;font-size:13px;color:#f0c24a}
+</style>
+</head>
+<body>
+<div id="app">
+  <h1>CAMERA SHOOT<small>以相機為武器的射擊遊戲 v2.2</small></h1>
+
+  <div id="gameWrap" class="hidden">
+    <canvas id="c" width="960" height="600"></canvas>
+    <div id="touch" class="hidden">
+      <div id="joyZone"></div><div id="joyBase"><div id="joyKnob"></div></div>
+      <button class="tbtn" id="tReload">🔄<small>換卡</small></button>
+      <button class="tbtn" id="tFlash">💥<small>閃光燈</small></button>
+      <div id="rotHint">建議橫向持機</div>
+    </div>
+    <div id="over" class="hidden">
+      <div class="box">
+        <h2 id="overTitle">任務失敗</h2>
+        <p id="overTxt"></p>
+        <button class="btn hidden" id="endless">繼續挑戰（無盡模式）</button>
+        <button class="btn" id="retry">回商店重新挑戰此波</button>
+        <button class="btn ghost" id="restart">完全重來</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="shop">
+    <div class="top">
+      <div class="gold" id="gold">0</div>
+      <span style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><button class="btn ghost" id="tglTouch" style="margin:0;padding:6px 10px;font-size:12px">觸控：自動</button><button class="btn ghost" id="wipe" style="margin:0;padding:6px 10px;font-size:12px">清除存檔</button><button class="btn" id="go">開始第 1 波</button></span>
+    </div>
+    <div class="load" id="load"></div>
+    <div class="tabs" id="tabs"></div>
+    <div id="list"></div>
+    <div id="msg"></div>
+  </div>
+
+  <div class="hint">
+    <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> 或方向鍵 移動（只需控制走位）　自動鎖定最近敵人並開火，子彈會追蹤目標　<kbd>G</kbd> / <kbd>空白鍵</kbd> / 點畫面 丟閃光燈（自動丟向敵人最密集處）　<kbd>R</kbd> 手動換記憶卡（彈夾空了會自動換）　<kbd>M</kbd> 靜音<br>
+    手機／平板：左側拖曳虛擬搖桿移動，右側按鈕丟閃光燈／換卡；商店階段會自動存檔（瀏覽器 localStorage），擊殺圖鑑也會保留。
+  </div>
+</div>
+
+<script>
+'use strict';
+/* ============================== CONFIG ============================== */
+// 機身：強度依你指定的順序（R6 III 排在 R5 II 之前）
+// track = 子彈追蹤轉向速度(rad/s)，越高越容易咬住目標；slots = 該機身可使用的記憶卡類型（遊戲設定，可自行調整）
+const CAMERAS=[
+ {id:'500d',short:'500D',name:'Canon EOS 500D',year:2009,dmg:12,rate:2.5,spread:8,track:5,hp:100,speed:200,price:0   ,slots:['SD']},
+ {id:'60d' ,short:'60D' ,name:'Canon EOS 60D' ,year:2010,dmg:16,rate:3.2,spread:7,track:5.5,hp:110,speed:204,price:250 ,slots:['SD']},
+ {id:'5d3' ,short:'5D3' ,name:'Canon EOS 5D Mark III',year:2012,dmg:21,rate:4  ,spread:6,track:6.5,hp:125,speed:208,price:700 ,slots:['SD','CF']},
+ {id:'1dx3',short:'1DX3',name:'Canon EOS-1D X Mark III',year:2020,dmg:28,rate:5.5,spread:5,track:7.5,hp:150,speed:212,price:1500,slots:['CFX']},
+ {id:'r8'  ,short:'R8'  ,name:'Canon EOS R8'  ,year:2022,dmg:36,rate:7  ,spread:4,track:8.5,hp:175,speed:218,price:4000,slots:['SD']},
+ {id:'r6m3',short:'R6 III',name:'Canon EOS R6 Mark III',year:2025,dmg:46,rate:8.5,spread:3,track:9.5,hp:205,speed:224,price:6500,slots:['SD','CFX']},
+ {id:'r5m2',short:'R5 II',name:'Canon EOS R5 Mark II',year:2024,dmg:58,rate:10 ,spread:2,track:11,hp:240,speed:230,price:9500,slots:['SD','CFX']},
+ {id:'r1'  ,short:'R1'  ,name:'Canon EOS R1'  ,year:2024,dmg:75,rate:12 ,spread:1,track:13,hp:280,speed:236,price:14000,slots:['SD','CFX']},
+];
+// 記憶卡 = 彈夾。cap = 容量(彈藥數)；換彈時間由卡種決定
+const CARDTYPES={SD:{label:'SD',reload:2.2},CF:{label:'CF',reload:1.4},CFX:{label:'CFexpress',reload:0.7}};
+const CARDS=[
+ {id:'sd8'   ,type:'SD' ,name:'SD 8GB'          ,cap:30  ,price:0},
+ {id:'sd32'  ,type:'SD' ,name:'SD 32GB'         ,cap:60  ,price:100},
+ {id:'sd128' ,type:'SD' ,name:'SD 128GB'        ,cap:120 ,price:350},
+ {id:'cf64'  ,type:'CF' ,name:'CF 64GB'         ,cap:100 ,price:300},
+ {id:'cf256' ,type:'CF' ,name:'CF 256GB'        ,cap:240 ,price:800},
+ {id:'cfx128',type:'CFX',name:'CFexpress 128GB' ,cap:180 ,price:700},
+ {id:'cfx512',type:'CFX',name:'CFexpress 512GB' ,cap:480 ,price:2200},
+ {id:'cfx1t' ,type:'CFX',name:'CFexpress 1TB'   ,cap:1000,price:5000},
+];
+// 閃光燈 = 手雷。dmg 傷害、radius 範圍(px)、stun 暈眩秒數、carry 每波可攜帶數、cd 丟擲冷卻、ammoPrice 單顆補充價
+const FLASHES=[
+ {id:'pop'   ,name:'機身內建閃光燈'          ,dmg:50 ,radius:90 ,stun:1.0,carry:2,cd:1.2,price:0   ,ammoPrice:20},
+ {id:'430'   ,name:'Speedlite 430EX III-RT' ,dmg:100,radius:120,stun:1.5,carry:3,cd:1.2,price:200 ,ammoPrice:35},
+ {id:'600'   ,name:'Speedlite 600EX II-RT'  ,dmg:200,radius:150,stun:2.0,carry:3,cd:1.1,price:700 ,ammoPrice:60},
+ {id:'el1'   ,name:'Speedlite EL-1'         ,dmg:400,radius:185,stun:2.5,carry:4,cd:1.0,price:1800,ammoPrice:100},
+ {id:'studio',name:'攝影棚大型爆閃燈'        ,dmg:900,radius:230,stun:3.2,carry:5,cd:0.9,price:4000,ammoPrice:160},
+];
+// 接環：EFS = EF-S（僅 APS-C 單眼 500D/60D）、EF（單眼；R 系列需轉接環）、RF（僅 R 系列）
+const MOUNTNAME={EFS:'EF-S',EF:'EF',RF:'RF'};
+const CAMMOUNTS={'500d':['EFS','EF'],'60d':['EFS','EF'],'5d3':['EF'],'1dx3':['EF'],'r8':['RF','EF','EFS'],'r6m3':['RF','EF','EFS'],'r5m2':['RF','EF','EFS'],'r1':['RF','EF','EFS']};
+CAMERAS.forEach(c=>{c.mounts=CAMMOUNTS[c.id];});
+const mountText=c=>c.mounts.includes('RF')?'RF（EF / EF-S 鏡頭需轉接環，EF-S 會裁切）':c.mounts.map(m=>MOUNTNAME[m]).join(' / ');
+// 彈種平衡原則：射速 標準 > 廣角(散彈) > 長焦(狙擊) > 超長焦(飛彈)；單次傷害相反（飛彈 > 狙擊 > 散彈 > 標準）
+// 彈種基礎：n 彈丸數、dmg 傷害倍率、rate 射速倍率、cost 每次耗彈、spread 散射半角(度)、acc 機身散布影響、
+// spd 彈速、life 飛行秒數、trk 追蹤倍率、pierce 內建穿透數、splash 爆炸半徑(px)
+const KINDS={
+ std :{label:'標準彈',n:1,dmg:1  ,rate:1  ,cost:1,spread:0 ,acc:1 ,spd:1100,life:.8 ,trk:1  ,pierce:0,splash:0 ,col:'#fffbe0',size:2.5,desc:'標準鏡頭：均衡的子彈，追蹤良好'},
+ wide:{label:'散彈'  ,n:6,dmg:.33,rate:.75,cost:2,spread:20,acc:1 ,spd:950 ,life:.38,trk:.35,pierce:0,splash:0 ,col:'#ffd27a',size:2  ,desc:'廣角鏡頭：一次射出 6 發扇形彈丸，近距離爆發高，射程短，每次耗 2 發'},
+ tele:{label:'狙擊彈',n:1,dmg:3  ,rate:.35,cost:1,spread:0 ,acc:0 ,spd:2200,life:.6 ,trk:2  ,pierce:1,splash:0 ,col:'#bfe3ff',size:3.5,desc:'望遠鏡頭：高傷害、極遠、近乎必中，自帶穿透 1 個敵人（每穿透一個傷害 ×0.75），射速慢'},
+ rkt :{label:'飛彈'  ,n:1,dmg:3.3,rate:.3 ,cost:3,spread:0 ,acc:.5,spd:520 ,life:2.2,trk:1.2,pierce:0,splash:70,sm:.5,col:'#ff8a3c',size:5  ,desc:'超望遠鏡頭：慢速強追蹤，命中爆炸，周圍敵人受 50% 傷害，每次耗 3 發'},
+};
+// 真實佳能鏡頭。kind=彈種、q=光學等級（提升傷害、射速、追蹤）、mount=接環
+const LENSDEFS=[
+ {id:'efs1855' ,name:'EF-S 18-55mm f/3.5-5.6 IS STM'  ,mount:'EFS',kind:'std' ,q:1.0 ,price:0   ,note:'入門套鏡'},
+ {id:'efs1018' ,name:'EF-S 10-18mm f/4.5-5.6 IS STM'  ,mount:'EFS',kind:'wide',q:1.0 ,price:350 },
+ {id:'efs55250',name:'EF-S 55-250mm f/4-5.6 IS STM'   ,mount:'EFS',kind:'tele',q:.9  ,price:900 },
+ {id:'ef50'    ,name:'EF 50mm f/1.8 STM'              ,mount:'EF' ,kind:'std' ,q:1.0 ,price:150 ,note:'小小白'},
+ {id:'ef2470'  ,name:'EF 24-70mm f/2.8L II USM'       ,mount:'EF' ,kind:'std' ,q:1.2 ,price:800 },
+ {id:'ef50l'   ,name:'EF 50mm f/1.2L USM'             ,mount:'EF' ,kind:'std' ,q:1.3 ,price:1300},
+ {id:'ef1635f4',name:'EF 16-35mm f/4L IS USM'         ,mount:'EF' ,kind:'wide',q:1.0 ,price:600 },
+ {id:'ef1635'  ,name:'EF 16-35mm f/2.8L III USM'      ,mount:'EF' ,kind:'wide',q:1.2 ,price:1100},
+ {id:'ef100400',name:'EF 100-400mm f/4.5-5.6L IS II USM',mount:'EF',kind:'tele',q:1.0 ,price:1300},
+ {id:'ef200400',name:'EF 200-400mm f/4L IS USM Ext 1.4x',mount:'EF',kind:'tele',q:1.25,price:3200},
+ {id:'ef400'   ,name:'EF 400mm f/2.8L IS III USM'     ,mount:'EF' ,kind:'rkt' ,q:1.0 ,price:2400},
+ {id:'ef600'   ,name:'EF 600mm f/4L IS III USM'       ,mount:'EF' ,kind:'rkt' ,q:1.3 ,price:4200},
+ {id:'rf50'    ,name:'RF 50mm f/1.8 STM'              ,mount:'RF' ,kind:'std' ,q:1.0 ,price:150 },
+ {id:'rf2470'  ,name:'RF 24-70mm f/2.8L IS USM'       ,mount:'RF' ,kind:'std' ,q:1.2 ,price:900 },
+ {id:'rf85'    ,name:'RF 85mm f/1.2L USM'             ,mount:'RF' ,kind:'std' ,q:1.35,price:1500},
+ {id:'rf16'    ,name:'RF 16mm f/2.8 STM'              ,mount:'RF' ,kind:'wide',q:.95 ,price:400 },
+ {id:'rf1535'  ,name:'RF 15-35mm f/2.8L IS USM'       ,mount:'RF' ,kind:'wide',q:1.25,price:1300},
+ {id:'rf100500',name:'RF 100-500mm f/4.5-7.1L IS USM' ,mount:'RF' ,kind:'tele',q:1.1 ,price:1900},
+ {id:'rf200800',name:'RF 200-800mm f/6.3-9 IS USM'    ,mount:'RF' ,kind:'tele',q:1.2 ,price:2800},
+ {id:'rf800'   ,name:'RF 800mm f/5.6L IS USM'         ,mount:'RF' ,kind:'tele',q:1.45,price:5200},
+ {id:'rf600'   ,name:'RF 600mm f/4L IS USM'           ,mount:'RF' ,kind:'rkt' ,q:1.3 ,price:4200},
+ {id:'rf1200'  ,name:'RF 1200mm f/8L IS USM'          ,mount:'RF' ,kind:'rkt' ,q:1.5 ,price:6500},
+];
+const LENSES=LENSDEFS.map(d=>{const k=KINDS[d.kind];
+  return Object.assign({},k,d,{type:d.kind,kind:k.label,dmg:k.dmg*d.q,rate:k.rate*(1+(d.q-1)*.4),trk:k.trk*(1+(d.q-1)*.6),desc:k.desc+(d.note?'（'+d.note+'）':'')});});
+// 濾鏡 = 彈藥效果（一次裝備一種，可搭配任何鏡頭）
+const FILTERS=[
+ {id:'uv'  ,short:'UV'  ,name:'UV 保護鏡' ,fx:null   ,price:0   ,col:null     ,desc:'無特殊效果'},
+ {id:'cpl' ,short:'穿透',name:'偏光鏡 CPL',fx:'pierce',pierce:2,price:700 ,col:'#e0b0ff',desc:'穿透：子彈額外穿透 2 個敵人（每穿透一個傷害 ×0.75）'},
+ {id:'ice' ,short:'冰凍',name:'冷色濾鏡'  ,fx:'ice'   ,price:1000,col:'#9ee6ff',desc:'冰凍：命中減速 50%（2.5 秒），同一敵人累積 4 次命中就凍結（Boss 凍結時間減半）'},
+ {id:'fire',short:'燃燒',name:'暖色濾鏡'  ,fx:'burn'  ,price:1000,col:'#ff9a3c',desc:'燃燒：命中後灼燒 3 秒，每秒約 50% 子彈傷害（不疊加，取較高者）'},
+ {id:'star',short:'連鎖',name:'星芒濾鏡'  ,fx:'chain' ,price:1600,col:'#fff06a',desc:'連鎖閃電：命中時再彈到附近最多 2 個敵人，造成 50% 傷害'},
+];
+const ETYPES={
+ walker:{r:13,hp:30 ,sp:62 ,dmg:8 ,gold:1  ,col:'#6fae5a'},
+ runner:{r:10,hp:16 ,sp:125,dmg:5 ,gold:.8 ,col:'#d9a441'},
+ tank  :{r:21,hp:130,sp:40 ,dmg:16,gold:3  ,col:'#7a5a9e'},
+ boss  :{r:40,hp:1000,sp:46,dmg:30,gold:45 ,col:'#c0392b'},
+};
+// 敵人主題：每 5 波換一組（10 個主題共 50 波，之後循環、數值繼續成長）。順序：風景→貓→狗→模特兒→重機→賽車→飛機→星空→體育→鳥類。
+// skills = Boss 技能：proj 投射彈（n 發、arc 散布角、360=環形）、aoe 定點落雷（預警後爆炸）、nova 以自身為中心的範圍爆發、
+//   beam 直線光束、charge 直線衝撞、summon 召喚小怪。wind 預警秒數、cd 冷卻、dmg 為 Boss 接觸傷害的倍率。狂暴(血量<50%)時數量增加、冷卻縮短。hp/sp/dmg 為主題倍率，rm 為體型倍率
+// dash = 衝刺行為（預警 wind 秒 → 直線衝刺 dur 秒，速度 ×mult，間隔 gap 秒）
+const THEMES=[
+ {label:'風景'  ,hp:1   ,sp:.85 ,dmg:1   ,rm:1.15,draw:dNature,norot:true,names:{walker:'野花',runner:'蒲公英',tank:'岩石',boss:'千年神木'},col:{walker:'#ff7eb6',runner:'#f4f1e8',tank:'#7d8590',boss:'#2f7d3a'},
+  skills:[
+   {k:'proj'  ,name:'落葉風暴',c:'110,200,110',wind:.7,cd:4.5,n:5,arc:70,spd:230,r:9,dmg:.5},
+   {k:'aoe'   ,name:'根鬚突刺',c:'160,115,60' ,wind:.9,cd:5.5,n:3,r:55,dmg:.9,stagger:.3},
+   {k:'nova'  ,name:'大地震動',c:'120,200,120',wind:1,cd:6,r:150,dmg:.8},
+   {k:'summon',name:'森林呼喚',c:'255,126,182',wind:.9,cd:11,n:3,kind:'walker'}]},
+ {label:'貓咪'  ,hp:1   ,sp:1   ,dmg:1   ,rm:1   ,draw:dCat  ,names:{walker:'虎斑貓'  ,runner:'黑貓'    ,tank:'胖橘貓'  ,boss:'布偶貓大王'},col:{walker:'#c9a27a',runner:'#2d2d36',tank:'#e0903a',boss:'#efe6d6'},
+  skills:[
+   {k:'proj'  ,name:'毛球連射',c:'255,235,210',wind:.6,cd:3.5,n:3,arc:24,spd:280,r:9,dmg:.5},
+   {k:'charge',name:'貓爪猛撲',c:'255,120,120',wind:.7,cd:6,dur:.55,spd:420,dmg:1.3},
+   {k:'nova'  ,name:'喵喵咆哮',c:'255,200,120',wind:.9,cd:6,r:130,dmg:.7},
+   {k:'summon',name:'召喚小貓',c:'200,170,130',wind:.9,cd:12,n:3,kind:'walker'}]},
+ {label:'狗狗'  ,hp:1.05,sp:1.12,dmg:1.05,rm:1.05,draw:dDog  ,names:{walker:'柴犬'    ,runner:'邊境牧羊犬',tank:'聖伯納犬',boss:'哈士奇王'  },col:{walker:'#d9a066',runner:'#3a3a46',tank:'#9c6b45',boss:'#aab4c0'},
+  skills:[
+   {k:'nova'  ,name:'仰天長嚎',c:'170,210,255',wind:1,cd:6,r:170,dmg:.8},
+   {k:'proj'  ,name:'飛盤直擲',c:'255,240,120',wind:.5,cd:3,n:1,arc:0,spd:400,r:12,dmg:1},
+   {k:'charge',name:'衝刺撕咬',c:'255,120,120',wind:.6,cd:6.5,dur:.6,spd:460,dmg:1.4},
+   {k:'aoe'   ,name:'骨頭雨'  ,c:'240,230,210',wind:.9,cd:6,n:4,r:45,dmg:.8,stagger:.2,spread:150}]},
+ {label:'模特兒',hp:1.2 ,sp:.92 ,dmg:1.1 ,rm:1   ,draw:dModel,names:{walker:'路人模特' ,runner:'街拍模特' ,tank:'婚紗模特',boss:'超級名模'  },col:{walker:'#e07aa8',runner:'#4fc3d9',tank:'#f2efe9',boss:'#c0392b'},
+  skills:[
+   {k:'proj'  ,name:'鎂光燈連拍',c:'255,255,200',wind:.6,cd:3.5,n:7,arc:120,spd:300,r:8,dmg:.45},
+   {k:'beam'  ,name:'紅毯直擊',c:'255,80,120',wind:.9,cd:6,len:650,w:70,dmg:1},
+   {k:'nova'  ,name:'華麗轉身',c:'255,160,200',wind:.9,cd:6,r:140,dmg:.8},
+   {k:'summon',name:'呼叫助理',c:'79,195,217',wind:.9,cd:12,n:3,kind:'runner'}]},
+ {label:'重機'  ,hp:1.1 ,sp:1.18,dmg:1.15,rm:1.1 ,draw:dMoto ,dash:{gap:[3,5]  ,wind:.45,dur:.5 ,mult:2.6},names:{walker:'街車'  ,runner:'越野摩托',tank:'巡航重機',boss:'重機車隊長'},col:{walker:'#c0392b',runner:'#2e9d5b',tank:'#4a4a55',boss:'#e0a526'},
+  skills:[
+   {k:'nova'  ,name:'引擎咆哮',c:'255,170,60',wind:.9,cd:6,r:150,dmg:.8},
+   {k:'charge',name:'重機衝撞',c:'255,100,80',wind:.55,cd:6,dur:.65,spd:480,dmg:1.5},
+   {k:'proj'  ,name:'廢氣彈幕',c:'255,150,40',wind:.6,cd:3.5,n:5,arc:60,spd:300,r:9,dmg:.5},
+   {k:'aoe'   ,name:'油桶轟炸',c:'255,110,40',wind:.9,cd:6,n:4,r:55,dmg:.9,stagger:.25,spread:150}]},
+ {label:'賽車'  ,hp:1.2 ,sp:1.25,dmg:1.2 ,rm:1.12,draw:dCar  ,dash:{gap:[2.8,4.5],wind:.4 ,dur:.55,mult:2.8},names:{walker:'跑車'  ,runner:'GT 賽車' ,tank:'拉力賽車',boss:'F1 賽車王'},col:{walker:'#d62828',runner:'#f77f00',tank:'#2a6fdb',boss:'#e63946'},
+  skills:[
+   {k:'charge',name:'極速衝刺',c:'255,80,80',wind:.5,cd:5.5,dur:.7,spd:560,dmg:1.5},
+   {k:'proj'  ,name:'輪胎碎片',c:'210,210,210',wind:.6,cd:4,n:10,arc:360,spd:250,r:8,dmg:.45},
+   {k:'beam'  ,name:'賽道光束',c:'255,70,70',wind:.8,cd:6,len:700,w:60,dmg:1},
+   {k:'aoe'   ,name:'輪胎炸彈',c:'120,120,130',wind:.9,cd:6,n:3,r:55,dmg:.9,stagger:.3,spread:140}]},
+ {label:'飛機'  ,hp:1.35,sp:1.2 ,dmg:1.25,rm:1.2 ,draw:dPlane,dash:{gap:[3,4.5]  ,wind:.5 ,dur:.7 ,mult:2.6},names:{walker:'螺旋槳小飛機',runner:'戰鬥機',tank:'運輸機',boss:'巨型客機'},col:{walker:'#ead9a0',runner:'#7b8794',tank:'#6e7f55',boss:'#f4f4f4'},
+  skills:[
+   {k:'aoe'   ,name:'空襲轟炸',c:'255,120,60',wind:.9,cd:6,n:6,r:60,dmg:.85,stagger:.22,spread:170},
+   {k:'proj'  ,name:'機槍掃射',c:'255,220,120',wind:.6,cd:3.5,n:9,arc:90,spd:340,r:6,dmg:.4},
+   {k:'charge',name:'俯衝突襲',c:'255,100,100',wind:.6,cd:6,dur:.7,spd:520,dmg:1.5},
+   {k:'summon',name:'空投援軍',c:'123,135,148',wind:.9,cd:12,n:3,kind:'runner'}]},
+ {label:'星空'  ,hp:1.35,sp:1.25,dmg:1.4 ,rm:1.1 ,draw:dSpace ,dash:{gap:[2.5,4],wind:.4,dur:.6,mult:3},names:{walker:'小星星',runner:'流星',tank:'月亮',boss:'土星'},col:{walker:'#ffd84d',runner:'#ffffff',tank:'#d9d9e3',boss:'#e0b36b'},
+  skills:[
+   {k:'aoe'   ,name:'流星雨'  ,c:'255,230,150',wind:.9,cd:6,n:6,r:50,dmg:.85,stagger:.2,spread:170},
+   {k:'nova'  ,name:'土星環衝擊',c:'240,215,160',wind:1.1,cd:6.5,r:190,dmg:.8},
+   {k:'proj'  ,name:'星光彈幕',c:'255,255,180',wind:.6,cd:4,n:12,arc:360,spd:220,r:7,dmg:.45},
+   {k:'beam'  ,name:'銀河光束',c:'180,160,255',wind:.9,cd:6,len:700,w:80,dmg:1}]},
+ {label:'體育'  ,hp:1.45,sp:1.2 ,dmg:1.35,rm:1.1 ,draw:dSport ,norot:true,dash:{gap:[2.5,4],wind:.4,dur:.5,mult:2.6},names:{walker:'足球',runner:'網球',tank:'籃球',boss:'全能運動員'},col:{walker:'#f5f5f5',runner:'#c8e63c',tank:'#e0782a',boss:'#2a6fdb'},
+  skills:[
+   {k:'aoe'   ,name:'籃球扣殺',c:'255,140,50',wind:.8,cd:4.5,n:1,r:85,dmg:1.2},
+   {k:'proj'  ,name:'網球發球',c:'200,230,60',wind:.5,cd:3,n:1,arc:0,spd:500,r:9,dmg:1},
+   {k:'proj'  ,name:'足球連射',c:'255,255,255',wind:.6,cd:4,n:5,arc:40,spd:340,r:9,dmg:.5},
+   {k:'charge',name:'短跑衝刺',c:'255,100,100',wind:.5,cd:6,dur:.6,spd:500,dmg:1.4}]},
+ {label:'鳥類'  ,hp:.95 ,sp:1.3 ,dmg:1.2 ,rm:1.1 ,draw:dBird  ,dash:{gap:[2.5,4],wind:.35,dur:.5,mult:2.4},names:{walker:'麻雀',runner:'燕子',tank:'貓頭鷹',boss:'白頭海鵰'},col:{walker:'#b58b5a',runner:'#2b3a67',tank:'#8d6e4c',boss:'#5a4632'},
+  skills:[
+   {k:'charge',name:'俯衝爪擊',c:'255,100,100',wind:.45,cd:5.5,dur:.55,spd:560,dmg:1.5},
+   {k:'proj'  ,name:'羽毛風暴',c:'235,235,235',wind:.6,cd:3.5,n:9,arc:140,spd:320,r:7,dmg:.4},
+   {k:'nova'  ,name:'疾風'    ,c:'190,230,255',wind:.8,cd:6,r:160,dmg:.8},
+   {k:'summon',name:'呼喚雛鳥',c:'181,139,90',wind:.9,cd:12,n:3,kind:'runner'}]},
+];
+const themeIdx=w=>Math.floor((w-1)/5)%THEMES.length;
+const themeLabel=w=>THEMES[themeIdx(w)].label+(w>THEMES.length*5?'・第'+(Math.floor((w-1)/(THEMES.length*5))+1)+'輪':'');
+// 配件（生存向）：四類各裝一件。grip 電池握把＝最大生命 +%（依機身配對）、bag 攝影背包＝受到傷害 -%、
+// refl 反光板＝護盾點數（4 秒沒受傷後回復）、batt 備用電池＝每波可復活 n 次（以 val 比例的生命復活）
+const ACCCAT={grip:'電池握把',bag:'攝影背包',refl:'反光板',batt:'備用電池'};
+const ACCS=[
+ {id:'bge5'  ,cat:'grip',name:'電池握把 BG-E5'     ,bodies:['500d']        ,val:.10,price:300 ,desc:'最大生命 +10%。僅 500D 可用'},
+ {id:'bge9'  ,cat:'grip',name:'電池握把 BG-E9'     ,bodies:['60d']         ,val:.15,price:400 ,desc:'最大生命 +15%。僅 60D 可用'},
+ {id:'bge11' ,cat:'grip',name:'電池握把 BG-E11'    ,bodies:['5d3']         ,val:.20,price:1200,desc:'最大生命 +20%。僅 5D3 可用'},
+ {id:'bgr10' ,cat:'grip',name:'電池握把 BG-R10'    ,bodies:['r6m3','r5m2'] ,val:.25,price:3500,desc:'最大生命 +25%。僅 R6 III / R5 II 可用（1DX3、R1 內建直拍握把，R8 不支援握把）'},
+ {id:'bag1'  ,cat:'bag' ,name:'一般攝影後背包'      ,val:.05,price:300 ,desc:'受到的傷害 -5%'},
+ {id:'bag2'  ,cat:'bag' ,name:'防水攝影後背包'      ,val:.08,price:900 ,desc:'受到的傷害 -8%'},
+ {id:'bag3'  ,cat:'bag' ,name:'硬殼防撞器材箱'      ,val:.12,price:2200,desc:'受到的傷害 -12%'},
+ {id:'rf1'   ,cat:'refl',name:'圓形折疊反光板'      ,val:20 ,price:400 ,desc:'護盾 20 點，6 秒沒受傷後回復'},
+ {id:'rf2'   ,cat:'refl',name:'大型反光板'          ,val:40 ,price:1000,desc:'護盾 40 點，6 秒沒受傷後回復'},
+ {id:'rf3'   ,cat:'refl',name:'專業反光板組'        ,val:60 ,price:2400,desc:'護盾 60 點，6 秒沒受傷後回復'},
+ {id:'bt1'   ,cat:'batt',name:'備用電池'            ,val:.20,n:1,price:600 ,desc:'每波 1 次：生命歸零時以 20% 生命復活'},
+ {id:'bt2'   ,cat:'batt',name:'雙備用電池＋充電器'  ,val:.35,n:1,price:1800,desc:'每波 1 次：生命歸零時以 35% 生命復活'},
+ {id:'bt3'   ,cat:'batt',name:'備用電池箱（3 顆）'  ,val:.55,n:1,price:4000,desc:'每波 1 次：生命歸零時以 55% 生命復活'},
+];
+// 通關波數：全部裝備總價 98,050 金幣；依預期累積收入（全清、不買補給）約第 30 波可買齊，再 +10 波 = 40 波
+const TOTAL_WAVES=45;
+const EQUIP_TOTAL=[CAMERAS,CARDS,LENSES,FILTERS,FLASHES,ACCS].reduce((t,a)=>t+a.reduce((u,x)=>u+x.price,0),0);
+const ownedValue=()=>[[CAMERAS,S.ownCam],[CARDS,S.ownCard],[LENSES,S.ownLens],[FILTERS,S.ownFilt],[FLASHES,S.ownFl],[ACCS,S.ownAcc]].reduce((t,[a,o])=>t+a.reduce((u,x)=>u+(o[x.id]?x.price:0),0),0);
+// 血量成長：前 20 波每波 ×1.13，之後放緩為每波 ×HP_LATE（讓全裝備玩家有機會通關）
+const PIERCE_FALL=.75;   // 穿透傷害遞減：第 2 個目標 ×0.75、第 3 個 ×0.56…
+const HP_LATE=1.05;
+const hpScale=w=>Math.pow(1.13,Math.min(w-1,19))*Math.pow(HP_LATE,Math.max(0,Math.min(w,30)-20))*Math.pow(1.04,Math.max(0,w-30));   // 30 波後再放緩
+const dmgScale=w=>1+.06*Math.min(w-1,29)+.03*Math.max(0,w-30);                                   // 敵人接觸傷害成長：30 波後減半
+const RESERVE_MULT=4;      // 備彈上限 = 記憶卡容量 × 此值
+/* ===================================================================== */
+
+const W=960,H=600;
+const $=id=>document.getElementById(id);
+const cv=$('c'),ctx=cv.getContext('2d');
+const byId=(arr,id)=>arr.find(x=>x.id===id);
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const rnd=(a,b)=>a+Math.random()*(b-a);
+const angDiff=(a,b)=>{let d=a-b;while(d>Math.PI)d-=2*Math.PI;while(d<-Math.PI)d+=2*Math.PI;return d;};
+const FONT='system-ui,-apple-system,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif';
+
+/* ---------- 存檔狀態（商店與裝備） ---------- */
+let S;
+function newGame(){
+  S={gold:300,wave:0,endless:false,ownAcc:{},acc:{grip:null,bag:null,refl:null,batt:null},shield:0,revives:0,kills:0,best:0,
+     ownCam:{'500d':1},ownCard:{sd8:1},ownFl:{pop:1},ownLens:{efs1855:1},ownFilt:{uv:1},
+     cam:'500d',card:'sd8',fl:'pop',lens:'efs1855',filt:'uv',
+     cardMag:{sd8:30},reserve:90,grenades:2,hp:100,album:{},albumSets:{}};
+}
+/* ---------- 存檔（localStorage，只在商店階段儲存；測試跳關期間不覆蓋存檔） ---------- */
+const SAVE_KEY='camshoot_save_v1';let cheat=false;
+function saveGame(){
+  if(cheat)return;
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify({v:1,ts:Date.now(),muted:muted,S:S}));}catch(e){}
+}
+function loadGame(){
+  try{
+    const raw=localStorage.getItem(SAVE_KEY);if(!raw)return false;
+    const d=JSON.parse(raw),L=d&&d.S;if(!d||d.v!==1||!L)return false;
+    newGame();
+    for(const k of ['gold','wave','kills','best','hp','reserve','grenades'])if(typeof L[k]==='number'&&isFinite(L[k]))S[k]=L[k];
+    S.endless=!!L.endless;muted=!!d.muted;
+    for(const [k,arr] of [['ownCam',CAMERAS],['ownCard',CARDS],['ownFl',FLASHES],['ownLens',LENSES],['ownFilt',FILTERS],['ownAcc',ACCS]])
+      for(const x of arr)if(L[k]&&L[k][x.id])S[k][x.id]=1;
+    const pick=(key,own,arr,def)=>{S[key]=(L[key]&&own[L[key]]&&arr.some(x=>x.id===L[key]))?L[key]:def;};
+    pick('cam',S.ownCam,CAMERAS,'500d');pick('card',S.ownCard,CARDS,'sd8');pick('fl',S.ownFl,FLASHES,'pop');pick('lens',S.ownLens,LENSES,'efs1855');pick('filt',S.ownFilt,FILTERS,'uv');
+    if(L.acc)for(const c of ['grip','bag','refl','batt']){const id=L.acc[c];S.acc[c]=(id&&S.ownAcc[id]&&ACCS.some(a=>a.id===id&&a.cat===c))?id:null;}
+    if(L.cardMag)for(const c of CARDS)if(typeof L.cardMag[c.id]==='number')S.cardMag[c.id]=clamp(L.cardMag[c.id],0,c.cap);
+    for(const c of CARDS)if(S.cardMag[c.id]==null&&S.ownCard[c.id])S.cardMag[c.id]=c.cap;
+    if(L.album)for(const k in L.album){const a=L.album[k];if(/^\d+-(walker|runner|tank|boss)$/.test(k)&&a&&a.n>0)S.album[k]={n:a.n|0,img:typeof a.img==='string'&&a.img.startsWith('data:image/')?a.img:''};}
+    if(L.albumSets)for(const k in L.albumSets)if(/^\d+$/.test(k)&&THEMES[+k])S.albumSets[k]=1;
+    if(!compat(curCam(),curCard())){const c=bestOwnedCardFor(curCam());if(c)S.card=c.id;}
+    if(!lcompat(curCam(),curLens())){const l=bestOwnedLensFor(curCam());if(l)S.lens=l.id;}
+    S.hp=clamp(S.hp,1,maxHP());S.reserve=clamp(S.reserve,0,reserveCap());S.grenades=clamp(S.grenades,0,curFl().carry);
+    return true;
+  }catch(e){return false;}
+}
+/* ---------- 擊殺圖鑑：每個主題 4 種（小怪、快跑、坦克、Boss） ---------- */
+const ALTYPES=['walker','runner','tank','boss'],ALTLABEL={walker:'普通',runner:'快跑',tank:'重裝',boss:'首領'};
+const albumMul=()=>1+.005*Object.keys(S.albumSets).length;     // 每完成一個主題：傷害 +0.5%（最多 +5%）
+function albumAdd(e){
+  const key=e.th+'-'+e.t;let a=S.album[key];
+  if(a){a.n++;return;}
+  let img='';
+  try{
+    if(typeof document.createElement==='function'){
+      const sz=Math.max(44,e.r*2.8),sx=Math.max(0,Math.min(W-sz,e.x-sz/2)),sy=Math.max(0,Math.min(H-sz,e.y-sz/2)),c=document.createElement('canvas');c.width=c.height=64;
+      c.getContext('2d').drawImage(cv,sx,sy,sz,sz,0,0,64,64);img=c.toDataURL('image/jpeg',.72);
+    }
+  }catch(err){}
+  S.album[key]={n:1,img};
+  const th=e.th,bonus=10*(th+1);S.gold+=bonus;
+  floats.push({x:e.x,y:e.y-e.r-16,t:0,txt:'📷 新圖鑑！+'+bonus,col:'#9ee6ff'});
+  if(ALTYPES.every(t=>S.album[th+'-'+t])&&!S.albumSets[th]){
+    S.albumSets[th]=1;const g=150*(th+1);S.gold+=g;shakeT=Math.max(shakeT,.2);
+    floats.push({x:e.x,y:e.y-e.r-30,t:0,txt:'🏆 「'+THEMES[th].label+'」圖鑑完成！+'+g,col:'#ffd24a'});
+  }
+}
+const curCam=()=>byId(CAMERAS,S.cam);
+const curCard=()=>byId(CARDS,S.card);
+const curFl=()=>byId(FLASHES,S.fl);
+const curLens=()=>byId(LENSES,S.lens);
+const curFilt=()=>byId(FILTERS,S.filt);
+const accOf=cat=>S.acc[cat]?byId(ACCS,S.acc[cat]):null;
+const gripOk=(cam,a)=>a.bodies.includes(cam.id);
+const gripBonus=()=>{const a=accOf('grip');return a&&gripOk(curCam(),a)?a.val:0;};
+const maxHP=()=>Math.round(curCam().hp*(1+gripBonus()));
+const bagReduce=()=>{const a=accOf('bag');return a?a.val:0;};
+const shieldMax=()=>{const a=accOf('refl');return a?a.val:0;};
+const battInfo=()=>{const a=accOf('batt');return a?{n:a.n,pct:a.val}:{n:0,pct:0};};
+const lcompat=(cam,l)=>cam.mounts.includes(l.mount);
+// R 系列轉接 EF-S 鏡頭會進入 APS-C 裁切模式：有效像素大幅下降 → 傷害與追蹤（對焦範圍）變差
+const CROP={dmg:.5,trk:.7,reach:1.4};   // reach：裁切讓望遠端等效焦段變長 → 狙擊/飛彈射程增加
+const cropped=(cam,l)=>l.mount==='EFS'&&cam.mounts.includes('RF');
+const reachMul=(cam,l)=>cropped(cam,l)&&(l.type==='tele'||l.type==='rkt')?CROP.reach:1;
+function bestOwnedLensFor(cam){
+  const cur=curLens();let b=null,bs=-1;
+  for(const l of LENSES){
+    if(!S.ownLens[l.id]||!lcompat(cam,l))continue;
+    const sc=(l.type===cur.type?10:0)+l.q*(cropped(cam,l)?CROP.dmg:1);if(sc>bs){bs=sc;b=l;}
+  }
+  return b;
+}
+const lensRange=()=>{const L=curLens();return L.spd*L.life*reachMul(curCam(),L)*.85;};
+const reserveCap=()=>curCard().cap*RESERVE_MULT;
+const getMag=()=>S.cardMag[S.card];
+const setMag=v=>{S.cardMag[S.card]=v;};
+const compat=(cam,card)=>cam.slots.includes(card.type);
+function bestOwnedCardFor(cam){
+  let b=null;
+  for(const c of CARDS){if(S.ownCard[c.id]&&compat(cam,c)&&(!b||c.cap>b.cap))b=c;}
+  return b;
+}
+
+/* ---------- 戰鬥狀態 ---------- */
+let mode='shop';            // shop | play | dead
+let P,enemies,bullets,nades,fx,snaps=[],arcs,eproj,zones,drops,floats,spawnQ,spawnT,banner,hurtT,screenFlash,T=0;
+let parts=[],decals=[],shakeT=0;
+const keys={};const joy={on:false,x:0,y:0};
+let target=null;
+
+function resetPlayer(){P={x:W/2,y:H/2,ang:0,iframes:0,shotCd:0,reloading:false,reloadT:0,reloadMax:1,muzzle:0,flashCd:0,shieldT:99,shHit:0};}
+resetPlayer();
+enemies=[];bullets=[];nades=[];fx=[];snaps=[];arcs=[];eproj=[];zones=[];drops=[];floats=[];parts=[];decals=[];shakeT=0;spawnQ=[];spawnT=0;banner=0;hurtT=0;screenFlash=0;
+
+/* ---------- 聲音 ---------- */
+let AC=null,muted=false,noiseBuf=null;
+function ac(){
+  if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)();}catch(e){AC=null;}}
+  if(AC&&AC.state==='suspended'){try{AC.resume();}catch(e){}}
+  return AC;
+}
+function snd(kind){
+  if(muted)return;
+  try{
+    const a=ac();if(!a)return;
+    const t=a.currentTime,g=a.createGain();g.connect(a.destination);
+    if(kind==='shot'||kind==='reload'){
+      if(!noiseBuf){noiseBuf=a.createBuffer(1,a.sampleRate*0.05,a.sampleRate);const d=noiseBuf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,3);}
+      const s=a.createBufferSource();s.buffer=noiseBuf;s.playbackRate.value=kind==='shot'?1:.5;
+      g.gain.value=kind==='shot'?.07:.1;s.connect(g);s.start(t);
+    }else{
+      const o=a.createOscillator();o.type=kind==='boom'?'sawtooth':'sine';
+      o.frequency.setValueAtTime(kind==='boom'?1800:600,t);o.frequency.exponentialRampToValueAtTime(kind==='boom'?120:300,t+.25);
+      g.gain.setValueAtTime(.1,t);g.gain.exponentialRampToValueAtTime(.001,t+.28);
+      o.connect(g);o.start(t);o.stop(t+.3);
+    }
+  }catch(e){}
+}
+
+/* ---------- 波次 ---------- */
+function composeWave(w){
+  const idx=(w-1)%5,n=8+Math.round(3.2*Math.min(w,30)+1.6*Math.max(0,w-30)),q=[];       // idx：主題內的第幾波（0~4），每個主題從基本款開始
+  const pt=idx>=2?Math.min(.25,.08+idx*.03+Math.floor(w/10)*.02):0, pr=idx>=1?Math.min(.35,.12+idx*.04):0;
+  for(let i=0;i<n;i++){
+    const r=Math.random();
+    q.push(r<pt?'tank':(r<pt+pr?'runner':'walker'));
+  }
+  if(w%5===0){
+    const nb=Math.min(3,1+Math.floor(w/10));
+    for(let i=0;i<nb;i++)q.splice(Math.floor(q.length*(.45+.2*i)),0,'boss');
+  }
+  return q;
+}
+function startWave(){
+  S.wave++;
+  resetPlayer();S.hp=Math.min(S.hp,maxHP());S.shield=shieldMax();S.revives=battInfo().n;
+  enemies=[];bullets=[];nades=[];fx=[];snaps=[];arcs=[];eproj=[];zones=[];drops=[];floats=[];parts=[];decals=[];shakeT=0;
+  spawnQ=composeWave(S.wave);spawnT=1;banner=1.6;hurtT=0;screenFlash=0;
+  mode='play';joy.on=false;joy.x=joy.y=0;
+  $('shop').classList.add('hidden');$('gameWrap').classList.remove('hidden');$('over').classList.add('hidden');syncTouch();
+}
+function spawnEnemy(t,px,py){
+  const ti=themeIdx(S.wave),th=THEMES[ti],d=ETYPES[t],w=S.wave,m=hpScale(w),r=d.r*th.rm;
+  const side=Math.floor(Math.random()*4);let x,y;
+  if(side===0){x=-r-5;y=rnd(0,H);}else if(side===1){x=W+r+5;y=rnd(0,H);}
+  else if(side===2){x=rnd(0,W);y=-r-5;}else{x=rnd(0,W);y=H+r+5;}
+  if(px!=null){x=px;y=py;}
+  enemies.push({born:T,t,th:ti,name:th.names[t],x,y,r,hp:d.hp*m*th.hp,max:d.hp*m*th.hp,sp:d.sp*th.sp*(1+Math.min(.5,.01*w))*rnd(.92,1.08),
+    dmg:d.dmg*th.dmg*dmgScale(w),gold:Math.max(1,Math.round(5*d.gold*Math.pow(1.1,w-1))),col:th.col[t],stun:0,hit:0,burn:0,burnDps:0,slow:0,chill:0,
+    ds:0,dc:rnd(1,3),dT:0,dvx:0,dvy:0,ang:0,skCd:rnd(2.5,4),cast:null,lastSk:-1,enr:false});
+}
+function winWave(){
+  const bonus=30+S.wave*18;
+  S.gold+=bonus;S.best=Math.max(S.best,S.wave);
+  S.hp=Math.min(maxHP(),S.hp+maxHP()*.35);
+  S.grenades=Math.max(S.grenades,curFl().carry);
+  S.reserve=Math.min(reserveCap(),S.reserve+Math.round(curCard().cap*.5));
+  if(S.wave>=TOTAL_WAVES&&!S.endless){win();return;}
+  mode='shop';
+  showShop('第 '+S.wave+' 波完成！波次獎勵 +'+bonus+' 金幣，生命回復 35%，閃光燈補滿，備彈 +50% 卡容量。');
+}
+function win(){
+  mode='win';
+  $('overTitle').textContent='通關！完成 '+TOTAL_WAVES+' 波';$('overTitle').style.color='#7fe08a';
+  $('overTxt').textContent='累計擊殺 '+S.kills+'，剩餘金幣 '+S.gold+'。可以繼續挑戰無盡模式（主題循環、難度持續上升）。';
+  $('retry').classList.add('hidden');$('endless').classList.remove('hidden');$('over').classList.remove('hidden');
+}
+function die(){
+  mode='dead';
+  $('overTitle').textContent='任務失敗';$('overTitle').style.color='#ff8a76';$('retry').classList.remove('hidden');$('endless').classList.add('hidden');
+  $('overTxt').textContent='撐到第 '+S.wave+' 波，累計擊殺 '+S.kills+'。重新挑戰會扣 25% 金幣，裝備保留。';
+  $('over').classList.remove('hidden');
+}
+
+/* ---------- 射擊 / 換彈 / 閃光 ---------- */
+function updateTarget(){
+  // 自動鎖定：最近且在射程內的敵人
+  target=null;let bd=700;
+  for(const e of enemies){
+    const dx=e.x-P.x,dy=e.y-P.y,d=Math.hypot(dx,dy)-e.r;
+    if(d<bd){bd=d;target={e,a:Math.atan2(dy,dx),d};}
+  }
+}
+function startReload(){
+  const card=curCard();
+  if(P.reloading||getMag()>=card.cap||S.reserve<=0)return;
+  P.reloading=true;P.reloadMax=CARDTYPES[card.type].reload;P.reloadT=P.reloadMax;snd('reload');
+}
+function finishReload(){
+  const card=curCard(),need=card.cap-getMag(),take=Math.min(need,S.reserve);
+  setMag(getMag()+take);S.reserve-=take;P.reloading=false;
+}
+function fire(){
+  const cam=curCam(),L=curLens(),F=curFilt();
+  const used=Math.min(L.cost,getMag()),cm=cropped(cam,L);
+  const off=18+cam.dmg*.12+(LEXT[L.type]||0);
+  const lx=P.x+Math.cos(P.ang)*off,ly=P.y+Math.sin(P.ang)*off;
+  for(let i=0;i<L.n;i++){
+    const fan=L.n>1?(i/(L.n-1)-.5)*2*L.spread:0;
+    const ang=P.ang+(fan+(Math.random()*2-1)*cam.spread*L.acc)*Math.PI/180;
+    bullets.push({x:lx,y:ly,px:lx,py:ly,vx:Math.cos(ang)*L.spd,vy:Math.sin(ang)*L.spd,life:L.life*reachMul(cam,L),
+      dmg:cam.dmg*L.dmg*(cm?CROP.dmg:1)*albumMul(),tg:target?target.e:null,track:cam.track*L.trk*(cm?CROP.trk:1),pierce:L.pierce+(F.pierce||0),splash:L.splash,sm:L.sm||.7,
+      col:F.col||L.col,fcol:F.col,size:L.size,f:F,hitSet:new Set()});
+  }
+  setMag(getMag()-used);P.shotCd=1/(cam.rate*L.rate);P.muzzle=.05;snd('shot');
+  smokePuff(lx,ly,1,3,.18);
+  {const ca=P.ang+Math.PI/2*(Math.random()<.5?1:-1);addPart({k:'d',x:P.x,y:P.y,vx:Math.cos(ca)*rnd(70,130),vy:Math.sin(ca)*rnd(70,130),life:.5,max:.5,size:1.6,col:'#e0a526',drag:3,rot:0,vr:rnd(-20,20)});}
+}
+function throwFlash(){
+  const fl=curFl();
+  if(S.grenades<=0||P.flashCd>0)return;
+  S.grenades--;P.flashCd=fl.cd;
+  // 自動瞄準：射程內周圍敵人最多的位置（沒有敵人就丟向前方）
+  let tx=P.x+Math.cos(P.ang)*200,ty=P.y+Math.sin(P.ang)*200,best=-1;
+  for(const c of enemies){
+    if(Math.hypot(c.x-P.x,c.y-P.y)>380)continue;
+    let sc=0;for(const e of enemies)if(Math.hypot(e.x-c.x,e.y-c.y)<=fl.radius)sc+=e.t==='boss'?3:1;
+    if(sc>best){best=sc;tx=c.x;ty=c.y;}
+  }
+  let dx=tx-P.x,dy=ty-P.y,d=Math.hypot(dx,dy);
+  if(d>380){dx*=380/d;dy*=380/d;d=380;}
+  nades.push({x:P.x,y:P.y,tx:P.x+dx,ty:P.y+dy,t:0,dur:Math.max(.18,d/420),fl});
+}
+function explode(n){
+  const fl=n.fl;
+  fx.push({x:n.x,y:n.y,r:fl.radius,t:0,dur:.45,rays:true});
+  ringFx(n.x,n.y,fl.radius*1.15,'255,250,200',.5);sparks(n.x,n.y,22,'#fff6c0',380,.5,2.4);shakeT=Math.max(shakeT,.22);
+  snd('boom');
+  const pd=Math.hypot(P.x-n.x,P.y-n.y);
+  screenFlash=Math.max(screenFlash,pd<fl.radius*2?.75:.3);
+  for(const e of enemies){
+    if(Math.hypot(e.x-n.x,e.y-n.y)<=fl.radius+e.r){
+      e.hp-=fl.dmg;e.hit=.1;e.stun=Math.max(e.stun,e.t==='boss'?fl.stun*.5:fl.stun);
+      floats.push({x:e.x,y:e.y-e.r,t:0,txt:Math.round(fl.dmg)+'',col:'#fff3a0'});
+    }
+  }
+  reapDead();
+}
+function reapDead(){
+  for(let i=enemies.length-1;i>=0;i--){
+    const e=enemies[i];
+    if(e.hp<=0){
+      S.gold+=e.gold;S.kills++;deathFx(e);
+      floats.push({x:e.x,y:e.y,t:0,txt:'+'+e.gold,col:'#f0c24a'});
+      const r=Math.random();
+      if(e.t==='boss'||r<.12)drops.push({x:e.x,y:e.y,type:'ammo',life:12});
+      else if(r<.18)drops.push({x:e.x,y:e.y,type:'heal',life:12});
+      enemies.splice(i,1);
+    }
+  }
+}
+
+/* ---------- Boss 技能 ---------- */
+function takeDamage(d){                 // 受傷流程：背包減傷 → 護盾吸收 → 扣生命
+  d*=1-bagReduce();P.shieldT=0;shakeT=Math.max(shakeT,.18);
+  if(S.shield>0){const a=Math.min(S.shield,d);S.shield-=a;d-=a;P.shHit=.25;}
+  if(d>0){S.hp-=d;hurtT=.25;}
+}
+function hurtPlayer(d,force){
+  if(!force&&P.iframes>0)return;
+  takeDamage(d);P.iframes=Math.max(P.iframes,force?.3:.5);
+}
+function spawnZone(o){zones.push(Object.assign({t:0,fired:false,ft:0,follow:false,src:null,dmg:0},o));}
+function bossAI(e,dt){
+  const th=THEMES[e.th];
+  if(!e.enr&&e.hp<e.max*.5){e.enr=true;floats.push({x:e.x,y:e.y-e.r-30,t:0,txt:'狂暴！',col:'#ff5a4d',big:true,life:1.2});}
+  const k=e.enr?1.4:1;
+  if(!e.cast){
+    e.skCd-=dt;
+    if(e.skCd>0)return;
+    let i;do{i=Math.floor(Math.random()*th.skills.length);}while(i===e.lastSk&&th.skills.length>1);
+    e.lastSk=i;const sk=th.skills[i];
+    const a=Math.atan2(P.y-e.y,P.x-e.x),c=e.cast={sk,ph:'wind',t:0,dx:Math.cos(a),dy:Math.sin(a)};
+    e.ds=0;
+    floats.push({x:e.x,y:e.y-e.r-26,t:0,txt:sk.name+'！',col:'rgb('+sk.c+')',big:true,life:1.1});
+    if(sk.k==='aoe'){
+      const n=Math.round(sk.n*k);
+      for(let j=0;j<n;j++){
+        let x=P.x,y=P.y;
+        if(j>0||sk.spread){const an=Math.random()*Math.PI*2,dd=rnd(30,sk.spread||140);x+=Math.cos(an)*dd;y+=Math.sin(an)*dd;}
+        spawnZone({kind:'circle',x:clamp(x,20,W-20),y:clamp(y,20,H-20),r:sk.r,delay:sk.wind+j*(sk.stagger||0),dmg:e.dmg*sk.dmg,c:sk.c});
+      }
+    }else if(sk.k==='nova'){
+      spawnZone({kind:'circle',x:e.x,y:e.y,r:sk.r*(e.enr?1.15:1),delay:sk.wind,dmg:e.dmg*sk.dmg,c:sk.c,follow:true,src:e});
+    }else if(sk.k==='beam'){
+      const nb=e.enr?3:1;
+      for(let j=0;j<nb;j++)spawnZone({kind:'beam',x:e.x,y:e.y,ang:a+(j===0?0:(j===1?-.42:.42)),len:sk.len,w:sk.w,delay:sk.wind,dmg:e.dmg*sk.dmg,c:sk.c,follow:true,src:e});
+    }else if(sk.k==='charge'){
+      spawnZone({kind:'beam',x:e.x,y:e.y,ang:a,len:sk.spd*sk.dur,w:e.r*1.6,delay:sk.wind,dmg:0,c:sk.c,follow:true,src:e});
+    }
+    return;
+  }
+  const c=e.cast;c.t+=dt;
+  if(c.ph==='wind'){
+    if(c.t<c.sk.wind)return;
+    c.ph='act';c.t=0;
+    const sk=c.sk;
+    if(sk.k==='proj'){
+      const n=Math.max(1,Math.round(sk.n*k)),a0=Math.atan2(P.y-e.y,P.x-e.x);
+      for(let j=0;j<n;j++){
+        const a=sk.arc>=360?a0+j*Math.PI*2/n:(n===1?a0:a0+(j/(n-1)-.5)*sk.arc*Math.PI/180);
+        eproj.push({x:e.x,y:e.y,vx:Math.cos(a)*sk.spd,vy:Math.sin(a)*sk.spd,r:sk.r||8,dmg:e.dmg*sk.dmg,c:sk.c,life:3.5});
+      }
+    }else if(sk.k==='summon'){
+      const n=Math.round(sk.n*k);
+      for(let j=0;j<n&&enemies.length<45;j++){const a=Math.random()*Math.PI*2;spawnEnemy(sk.kind,e.x+Math.cos(a)*(e.r+20),e.y+Math.sin(a)*(e.r+20));}
+    }
+    return;
+  }
+  if(c.t>=(c.sk.k==='charge'?c.sk.dur:(c.sk.rec||.45))){e.cast=null;e.skCd=c.sk.cd*(e.enr?.7:1)*rnd(.9,1.1);}
+}
+
+/* ---------- 命中 / 狀態效果 ---------- */
+function segDist(px,py,ax,ay,bx,by){
+  const dx=bx-ax,dy=by-ay,l=dx*dx+dy*dy;let t=l?((px-ax)*dx+(py-ay)*dy)/l:0;t=clamp(t,0,1);
+  return Math.hypot(px-(ax+dx*t),py-(ay+dy*t));
+}
+function hitEnemy(b,e,dmg){
+  e.hp-=dmg;e.hit=.08;
+  if(!(e.irisT>T-.09)&&fx.length<70){e.irisT=T;fx.push({x:b.x,y:b.y,r:9+Math.min(9,e.r*.28),t:0,dur:.24,iris:true,c:b.fcol||'#ffe9a8',rot:Math.random()*1.05});}   // 命中：光圈葉片收縮
+  sparks(b.x,b.y,3,b.fcol||'#ffd98a',170,.25,2);
+  if(b.f&&b.f.fx==='ice')sparks(b.x,b.y,4,'#bdeeff',130,.4,2.4);else if(b.f&&b.f.fx==='burn')sparks(b.x,b.y,4,'#ff9a3c',110,.45,2.4);
+  floats.push({x:e.x+rnd(-6,6),y:e.y-e.r,t:0,txt:Math.round(dmg)+'',col:b.fcol||'#ffffff'});
+  const fx_=b.f&&b.f.fx;if(!fx_)return;
+  if(fx_==='burn'){e.burn=3;e.burnDps=Math.max(e.burnDps,dmg*.5);}
+  else if(fx_==='ice'){
+    e.slow=2.5;e.chill++;
+    if(e.chill>=4){e.chill=0;e.stun=Math.max(e.stun,e.t==='boss'?.8:1.6);floats.push({x:e.x,y:e.y-e.r-12,t:0,txt:'凍結!',col:'#9ee6ff'});}
+  }else if(fx_==='chain'){
+    const near=enemies.filter(o=>o!==e&&o.hp>0&&Math.hypot(o.x-e.x,o.y-e.y)<130)
+      .sort((p,q)=>Math.hypot(p.x-e.x,p.y-e.y)-Math.hypot(q.x-e.x,q.y-e.y)).slice(0,2);
+    for(const o of near){o.hp-=dmg*.5;o.hit=.08;arcs.push({x1:e.x,y1:e.y,x2:o.x,y2:o.y,t:0});
+      floats.push({x:o.x,y:o.y-o.r,t:0,txt:Math.round(dmg*.5)+'',col:b.fcol});}
+  }
+}
+function blast(b,d){
+  const x=d?d.x:b.x,y=d?d.y:b.y;
+  fx.push({x,y,r:b.splash,t:0,dur:.35,c:'255,150,60'});snd('boom');
+  ringFx(x,y,b.splash*1.1,'255,190,110',.35);sparks(x,y,14,'#ffb347',300,.45,2.4);debris(x,y,6,'#6b5a4a',200,2.4);smokePuff(x,y,4,b.splash*.18,.3);shakeT=Math.max(shakeT,.12);
+  for(const e of enemies.slice()){
+    if(e.hp>0&&Math.hypot(e.x-x,e.y-y)<=b.splash+e.r)hitEnemy(b,e,e===d?b.dmg:b.dmg*b.sm);
+  }
+}
+
+/* ---------- 更新 ---------- */
+function update(dt){
+  const cam=curCam(),card=curCard();
+  T+=dt;updateParts(dt);
+  // 移動
+  const ix=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0);
+  const iy=(keys.s||keys.arrowdown?1:0)-(keys.w||keys.arrowup?1:0);
+  let mx=ix,my=iy,il=Math.hypot(ix,iy)||1;
+  if(joy.on&&!ix&&!iy){mx=joy.x;my=joy.y;il=Math.max(1,Math.hypot(mx,my));}   // 虛擬搖桿：類比移動
+  P.x=clamp(P.x+mx/il*cam.speed*dt,16,W-16);
+  P.y=clamp(P.y+my/il*cam.speed*dt,16,H-16);
+  if((mx||my)&&Math.random()<dt*14)smokePuff(P.x-mx/il*8,P.y-my/il*8+8,1,2.2,.13);
+  P.iframes=Math.max(0,P.iframes-dt);P.muzzle=Math.max(0,P.muzzle-dt);
+  P.flashCd=Math.max(0,P.flashCd-dt);P.shotCd=Math.max(0,P.shotCd-dt);
+  P.shieldT+=dt;P.shHit=Math.max(0,P.shHit-dt);
+  if(S.shield<shieldMax()&&P.shieldT>6)S.shield=Math.min(shieldMax(),S.shield+shieldMax()/6*dt);
+  updateTarget();
+  if(target)P.ang=target.a;else if(ix||iy)P.ang=Math.atan2(iy,ix);
+  // 換彈（彈夾空了自動換卡）
+  if(P.reloading){P.reloadT-=dt;if(P.reloadT<=0)finishReload();}
+  else if(getMag()<=0&&S.reserve>0)startReload();
+  // 自動開火
+  if(target&&target.d<=lensRange()&&!P.reloading&&P.shotCd<=0&&getMag()>0)fire();
+  // 閃光彈
+  for(let i=nades.length-1;i>=0;i--){
+    const n=nades[i];n.t+=dt;
+    const k=Math.min(1,n.t/n.dur);n.x=P.x+(n.tx-P.x)*k;n.y=P.y+(n.ty-P.y)*k;
+    if(n.t>=n.dur){n.x=n.tx;n.y=n.ty;explode(n);nades.splice(i,1);}
+  }
+  // 子彈
+  for(let i=bullets.length-1;i>=0;i--){
+    const b=bullets[i];
+    // 追蹤：目標死亡或已被穿透過，改追最近的未命中敵人；轉向速度受機身與鏡頭影響
+    if(b.track>0){
+      if(!b.tg||b.tg.hp<=0||enemies.indexOf(b.tg)<0||b.hitSet.has(b.tg)){
+        b.tg=null;let bd=500;
+        for(const e of enemies){if(e.hp<=0||b.hitSet.has(e))continue;const d=Math.hypot(e.x-b.x,e.y-b.y);if(d<bd){bd=d;b.tg=e;}}
+      }
+      if(b.tg){
+        const sp=Math.hypot(b.vx,b.vy),cur=Math.atan2(b.vy,b.vx);
+        const df=angDiff(Math.atan2(b.tg.y-b.y,b.tg.x-b.x),cur);
+        const na=cur+clamp(df,-b.track*dt,b.track*dt);
+        b.vx=Math.cos(na)*sp;b.vy=Math.sin(na)*sp;
+      }
+    }
+    if(b.splash&&Math.random()<dt*45)smokePuff(b.x,b.y,1,3.5,.25);
+    b.px=b.x;b.py=b.y;b.x+=b.vx*dt;b.y+=b.vy*dt;b.life-=dt;
+    let dead=false;
+    for(const e of enemies){
+      if(e.hp<=0||b.hitSet.has(e))continue;
+      if(segDist(e.x,e.y,b.px,b.py,b.x,b.y)<e.r+3){
+        b.hitSet.add(e);
+        if(b.splash){blast(b,e);dead=true;break;}
+        hitEnemy(b,e,b.dmg*Math.pow(PIERCE_FALL,b.hitSet.size-1));   // 每穿透一個目標，傷害遞減
+        if(b.pierce>0)b.pierce--;else{dead=true;break;}
+      }
+    }
+    if(!dead&&b.life<=0&&b.splash){blast(b,null);dead=true;}
+    if(dead||b.life<=0||b.x<-20||b.x>W+20||b.y<-20||b.y>H+20)bullets.splice(i,1);
+  }
+  reapDead();
+  // 生成敵人
+  spawnT-=dt;
+  if(spawnQ.length&&spawnT<=0&&enemies.length<45){spawnEnemy(spawnQ.shift());spawnT=Math.max(.22,.8-S.wave*.02);}
+  // 敵人移動與接觸傷害
+  for(const e of enemies){
+    e.hit=Math.max(0,e.hit-dt);
+    if(e.burn>0){e.burn-=dt;e.hp-=e.burnDps*dt;}
+    if(e.slow>0)e.slow-=dt;
+    if(e.stun>0){e.stun-=dt;continue;}
+    if(e.t==='boss')bossAI(e,dt);
+    const sm=e.slow>0?.5:1;
+    const dx=P.x-e.x,dy=P.y-e.y,d=Math.hypot(dx,dy)||1,th=THEMES[e.th];
+    let vx=dx/d,vy=dy/d,mul=1;
+    if(th.dash&&!e.cast){               // 衝刺：預警（幾乎停住）→ 鎖定方向直線衝刺
+      e.dc-=dt;
+      if(e.ds===1){e.dT-=dt;mul=.1;if(e.dT<=0){e.ds=2;e.dT=th.dash.dur;e.dvx=vx;e.dvy=vy;}}
+      else if(e.ds===2){e.dT-=dt;vx=e.dvx;vy=e.dvy;mul=e.t==='boss'?1.8:th.dash.mult;if(e.dT<=0){e.ds=0;e.dc=rnd(th.dash.gap[0],th.dash.gap[1]);}}
+      else if(e.dc<=0){e.ds=1;e.dT=th.dash.wind;}
+    }
+    if(e.cast){                         // 施放技能：預警時幾乎停住；衝撞時沿鎖定方向高速前進
+      const c=e.cast;
+      if(c.sk.k==='charge'&&c.ph==='act'){vx=c.dx;vy=c.dy;mul=c.sk.spd/e.sp;}else mul*=.15;
+    }
+    e.ang=Math.atan2(vy,vx);
+    e.x+=vx*e.sp*sm*mul*dt;e.y+=vy*e.sp*sm*mul*dt;
+    if(d<e.r+13&&P.iframes<=0){
+      takeDamage(e.dmg*((e.cast&&e.cast.ph==='act'&&e.cast.sk.k==='charge')?e.cast.sk.dmg:1));P.iframes=.6;
+    }
+  }
+  reapDead();
+  for(let i=0;i<enemies.length;i++)for(let j=i+1;j<enemies.length;j++){
+    const a=enemies[i],b=enemies[j],dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy),m=a.r+b.r;
+    if(d>0&&d<m){const p=(m-d)/2*.5/d;a.x-=dx*p;a.y-=dy*p;b.x+=dx*p;b.y+=dy*p;}
+  }
+  // 掉落物
+  for(let i=drops.length-1;i>=0;i--){
+    const d=drops[i];d.life-=dt;
+    if(Math.hypot(d.x-P.x,d.y-P.y)<22){
+      if(d.type==='ammo'){const g=Math.round(card.cap*.4);S.reserve=Math.min(reserveCap(),S.reserve+g);floats.push({x:d.x,y:d.y,t:0,txt:'+'+g+' 彈',col:'#8fd0ff'});}
+      else{S.hp=Math.min(maxHP(),S.hp+25);floats.push({x:d.x,y:d.y,t:0,txt:'+25 HP',col:'#8fe08f'});}
+      drops.splice(i,1);
+    }else if(d.life<=0)drops.splice(i,1);
+  }
+  // Boss 投射物與範圍技能
+  for(let i=eproj.length-1;i>=0;i--){
+    const q=eproj[i];q.x+=q.vx*dt;q.y+=q.vy*dt;q.life-=dt;
+    if(Math.hypot(q.x-P.x,q.y-P.y)<q.r+12&&P.iframes<=0){hurtPlayer(q.dmg);eproj.splice(i,1);continue;}
+    if(q.life<=0||q.x<-30||q.x>W+30||q.y<-30||q.y>H+30)eproj.splice(i,1);
+  }
+  for(let i=zones.length-1;i>=0;i--){
+    const z=zones[i];
+    if(z.src&&(z.src.hp<=0||enemies.indexOf(z.src)<0)){zones.splice(i,1);continue;}
+    if(z.follow&&z.src&&!z.fired){z.x=z.src.x;z.y=z.src.y;}
+    z.t+=dt;
+    if(!z.fired&&z.t>=z.delay){
+      z.fired=true;z.ft=0;
+      if(z.dmg>0){
+        const hit=z.kind==='circle'?Math.hypot(P.x-z.x,P.y-z.y)<z.r+10
+          :segDist(P.x,P.y,z.x,z.y,z.x+Math.cos(z.ang)*z.len,z.y+Math.sin(z.ang)*z.len)<z.w/2+10;
+        if(hit)hurtPlayer(z.dmg,true);
+        if(z.kind==='circle')fx.push({x:z.x,y:z.y,r:z.r,t:0,dur:.3,c:z.c});
+      }
+    }
+    if(z.fired){z.ft+=dt;if(z.ft>.3)zones.splice(i,1);}
+  }
+  // 特效
+  for(let i=fx.length-1;i>=0;i--){fx[i].t+=dt;if(fx[i].t>=fx[i].dur)fx.splice(i,1);}
+  for(let i=snaps.length-1;i>=0;i--){const q=snaps[i];q.t+=dt;if(q.t>.2){if(!q.shot){q.shot=true;screenFlash=Math.max(screenFlash,q.boss?.25:.06);ringFx(q.x,q.y,q.boss?60:26,'255,255,255',.25);}q.y+=q.vy*dt;q.vy*=Math.max(0,1-1.6*dt);}if(q.t>=q.dur){q.c.busy=false;snaps.splice(i,1);}}
+  for(let i=arcs.length-1;i>=0;i--){arcs[i].t+=dt;if(arcs[i].t>.18)arcs.splice(i,1);}
+  for(let i=floats.length-1;i>=0;i--){floats[i].t+=dt;floats[i].y-=26*dt;if(floats[i].t>(floats[i].life||.7))floats.splice(i,1);}
+  if(floats.length>70)floats.splice(0,floats.length-70);
+  hurtT=Math.max(0,hurtT-dt);screenFlash=Math.max(0,screenFlash-dt*1.4);banner=Math.max(0,banner-dt);
+  // 勝負
+  if(S.hp<=0){
+    if(S.revives>0){                    // 備用電池：復活
+      S.revives--;S.hp=Math.max(1,maxHP()*battInfo().pct);P.iframes=2;S.shield=shieldMax();hurtT=0;screenFlash=.5;
+      floats.push({x:P.x,y:P.y-30,t:0,txt:'備用電池復活！',col:'#9be37a',big:true,life:1.4});
+    }else{S.hp=0;die();return;}
+  }
+  if(!spawnQ.length&&!enemies.length)winWave();
+}
+
+/* ---------- 繪圖 ---------- */
+function circle(x,y,r){ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);}
+const LEXT={std:0,wide:-3,tele:14,rkt:24};
+function rr(x,y,w,h,r,fill,stroke){
+  ctx.beginPath();if(ctx.roundRect)ctx.roundRect(x,y,w,h,r);else ctx.rect(x,y,w,h);
+  if(fill){ctx.fillStyle=fill;ctx.fill();}
+  if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=1;ctx.stroke();}
+}
+/* ---------- 粒子 / 殘影 / 震動 ---------- */
+function addPart(p){if(parts.length<450)parts.push(p);}
+function sparks(x,y,n,col,spd,life,size){for(let i=0;i<n;i++){const a=Math.random()*6.2832,s=rnd(.35,1)*spd;addPart({k:'s',x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:life*rnd(.6,1),max:life,size:size*rnd(.6,1),col,drag:3});}}
+function debris(x,y,n,col,spd,size){for(let i=0;i<n;i++){const a=Math.random()*6.2832,s=rnd(.3,1)*spd;addPart({k:'d',x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:rnd(.5,.9),max:.9,size:size*rnd(.5,1),col,drag:2.2,rot:rnd(0,6),vr:rnd(-12,12)});}}
+function smokePuff(x,y,n,size,al){for(let i=0;i<n;i++)addPart({k:'m',x:x+rnd(-3,3),y:y+rnd(-3,3),vx:rnd(-24,24),vy:rnd(-24,24),life:rnd(.4,.8),max:.8,size,drag:1.5,al:al||.3});}
+function ringFx(x,y,r,c,dur){fx.push({x,y,r,t:0,dur:dur||.4,ring:true,c:c||'255,240,200'});}
+const SNAPCV=[];
+function takeSnap(e){
+  const boss=e.t==='boss';if(snaps.length>=(boss?8:6)&&!boss)return;
+  const sz=Math.max(44,e.r*2.8),out=boss?84:46;let c=SNAPCV.find(q=>!q.busy);
+  if(!c){if(SNAPCV.length>=10||typeof document.createElement!=='function')return;c=document.createElement('canvas');c.width=c.height=88;SNAPCV.push(c);}
+  const sx=Math.max(0,Math.min(W-sz,e.x-sz/2)),sy=Math.max(0,Math.min(H-sz,e.y-sz/2));
+  const g=c.getContext('2d');g.clearRect(0,0,88,88);
+  try{g.drawImage(cv,sx,sy,sz,sz,0,0,out,out);}catch(err){return;}
+  g.fillStyle='rgba(30,20,0,.16)';g.fillRect(0,0,out,out);                                       // 底片色調
+  const vg=g.createRadialGradient(out/2,out/2,out*.3,out/2,out/2,out*.75);vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,.45)');g.fillStyle=vg;g.fillRect(0,0,out,out);
+  c.busy=true;
+  snaps.push({x:e.x,y:e.y,c,out,r:e.r,t:0,dur:boss?2.2:1.35,rot:(Math.random()-.5)*.3,boss,vy:-(8+Math.random()*8),shot:false});
+}
+function deathFx(e){
+  const big=e.t==='boss'?3:(e.t==='tank'?1.6:1);
+  albumAdd(e);takeSnap(e);
+  debris(e.x,e.y,Math.round(9*big),e.col,190*big,Math.max(2,e.r*.2));
+  sparks(e.x,e.y,Math.round(10*big),'#fff0b0',260,.45,2.2);
+  smokePuff(e.x,e.y,Math.round(2+2*big),e.r*.5,.28);
+  ringFx(e.x,e.y,e.r*(2+big),'255,240,200',.3+.1*big);
+  if(e.t==='boss'){shakeT=Math.max(shakeT,.55);ringFx(e.x,e.y,e.r*5,'255,200,120',.7);sparks(e.x,e.y,30,'#ffd27a',420,.8,3);}
+  const bl=[];for(let i=0;i<5;i++)bl.push([rnd(-1,1)*e.r*.6,rnd(-1,1)*e.r*.6,e.r*rnd(.3,.6),e.r*rnd(.2,.45),rnd(0,3)]);
+  decals.push({x:e.x,y:e.y,col:e.col,bl,t:0,dur:6});if(decals.length>45)decals.shift();
+}
+function updateParts(dt){
+  for(let i=parts.length-1;i>=0;i--){
+    const p=parts[i];p.life-=dt;if(p.life<=0){parts.splice(i,1);continue;}
+    const d=Math.max(0,1-(p.drag||0)*dt);p.vx*=d;p.vy*=d;p.x+=p.vx*dt;p.y+=p.vy*dt;if(p.vr)p.rot+=p.vr*dt;
+  }
+  for(let i=decals.length-1;i>=0;i--){decals[i].t+=dt;if(decals[i].t>decals[i].dur)decals.splice(i,1);}
+  shakeT=Math.max(0,shakeT-dt);
+}
+function drawSnaps(){
+  for(const q of snaps){
+    const t=q.t;
+    if(t<.2){   // 對焦框：四角括號由外向內收攏並轉綠（對焦成功）
+      const k=t/.2,r=q.r*(2.4-1.3*k)+2,len=Math.max(4,r*.35),a=.5+.5*k;
+      ctx.strokeStyle=k>.8?'rgba(110,240,140,'+a+')':'rgba(255,255,255,'+a+')';ctx.lineWidth=1.8;ctx.lineCap='square';ctx.beginPath();
+      for(const [sx,sy] of [[-1,-1],[1,-1],[1,1],[-1,1]]){const cx=q.x+sx*r,cy=q.y+sy*r;ctx.moveTo(cx,cy-sy*len);ctx.lineTo(cx,cy);ctx.lineTo(cx-sx*len,cy);}
+      ctx.stroke();continue;
+    }
+    const u=t-.2,pop=u<.1?1.3-3*u:1,fade=Math.min(1,(q.dur-t)/.5),w=q.out+8,h=q.out+16;
+    ctx.save();ctx.globalAlpha=fade;ctx.translate(q.x,q.y-q.out*.3);ctx.rotate(q.rot);ctx.scale(pop*.95,pop*.95);
+    ctx.fillStyle='rgba(0,0,0,.35)';ctx.fillRect(-w/2+2,-h/2+3,w,h);                         // 陰影
+    ctx.fillStyle='#f3efe4';ctx.fillRect(-w/2,-h/2,w,h);ctx.strokeStyle='#bdb8a8';ctx.lineWidth=.8;ctx.strokeRect(-w/2,-h/2,w,h);   // 拍立得白框
+    ctx.drawImage(q.c,0,0,q.out,q.out,-q.out/2,-h/2+4,q.out,q.out);
+    if(u<.12){ctx.fillStyle='rgba(255,255,255,'+(1-u/.12)*.85+')';ctx.fillRect(-q.out/2,-h/2+4,q.out,q.out);}   // 閃光
+    ctx.strokeStyle='rgba(0,0,0,.25)';ctx.strokeRect(-q.out/2,-h/2+4,q.out,q.out);
+    ctx.fillStyle='#8a8576';ctx.fillRect(-w*.3,h/2-8,w*.6,1.2);ctx.fillRect(-w*.2,h/2-5,w*.4,1);   // 手寫註記線
+    ctx.restore();
+  }
+  ctx.globalAlpha=1;
+}
+function drawIris(f){
+  const k=f.t/f.dur,r=f.r*(1.25-.85*k),a=1-k*k;
+  ctx.save();ctx.translate(f.x,f.y);ctx.rotate(f.rot+k*.9);ctx.globalCompositeOperation='lighter';ctx.globalAlpha=a;
+  ctx.strokeStyle=f.c;ctx.lineWidth=1.6;ctx.beginPath();
+  for(let i=0;i<6;i++){const an=i*Math.PI/3,x1=Math.cos(an)*r,y1=Math.sin(an)*r;i?ctx.lineTo(x1,y1):ctx.moveTo(x1,y1);}
+  ctx.closePath();ctx.stroke();
+  ctx.lineWidth=1;ctx.beginPath();     // 光圈葉片的接縫線：由頂點向內切
+  for(let i=0;i<6;i++){const an=i*Math.PI/3,an2=an+Math.PI/3*.9;ctx.moveTo(Math.cos(an)*r,Math.sin(an)*r);ctx.lineTo(Math.cos(an2)*r*.45,Math.sin(an2)*r*.45);}
+  ctx.stroke();ctx.restore();
+}
+function drawParts(){
+  for(const p of parts){
+    const a=p.life/p.max;
+    if(p.k==='m'){ctx.fillStyle='rgba(190,190,196,'+(a*(p.al||.3))+')';circle(p.x,p.y,p.size*(1+(1-a)*1.6));ctx.fill();}
+    else if(p.k==='d'){ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot||0);ctx.globalAlpha=Math.min(1,a*1.6);ctx.fillStyle=p.col;ctx.fillRect(-p.size,-p.size*.6,p.size*2,p.size*1.2);ctx.restore();}
+  }
+  ctx.globalAlpha=1;ctx.globalCompositeOperation='lighter';ctx.lineCap='round';
+  for(const p of parts){
+    if(p.k!=='s')continue;
+    ctx.globalAlpha=p.life/p.max;ctx.strokeStyle=p.col;ctx.lineWidth=p.size;
+    ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(p.x-p.vx*.03,p.y-p.vy*.03);ctx.stroke();
+  }
+  ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';
+}
+/* ---------- 玩家 / 相機 ---------- */
+function camDims(idx,type){
+  const L=18+idx*1.6,Wd=13+idx*.9+(idx===3?2.5:0),ext=LEXT[type]||0,wf=type==='rkt'?.95:(type==='tele'?.8:.72);
+  return {L,Wd,ext,wf,ll:9+idx*.8+ext,bw:Wd*wf,mx:4+L};
+}
+function drawCamera(x,y,ang,idx,type,lname,lid,fcol){
+  ctx.save();ctx.translate(x,y);ctx.rotate(ang);ctx.translate(-(P&&P.muzzle>0?P.muzzle/.05*2.2:0),0);
+  const {L,Wd,ext,wf,ll,bw,mx}=camDims(idx,type),dslr=idx<=3,white=ext>=14,isL=/\dL\b/.test(lname||'')||white;
+  const sp=LENSSPEC[lid],pro=idx===3||idx===7,col=idx===3||idx===7?'#16171b':(idx===4?'#2c2e35':(idx===0?'#2b2c31':'#222328'));
+  const hrx=4+L*.62,hry=Wd/2+1.5,hlx=mx+ll*.45,hly=-bw/2-1.5;   // 右手握把、左手托鏡頭
+  // 頸帶（機身兩側吊環連到脖子）
+  ctx.strokeStyle='#0d0d10';ctx.lineWidth=2;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(4.5,-Wd/2+1.5);ctx.quadraticCurveTo(0,-9,-3,-10);ctx.moveTo(4.5,Wd/2-1.5);ctx.quadraticCurveTo(0,9,-3,10);ctx.stroke();
+  ctx.strokeStyle='#c1121f';ctx.lineWidth=.7;ctx.beginPath();ctx.moveTo(4.5,-Wd/2+1.5);ctx.quadraticCurveTo(0,-9,-3,-10);ctx.moveTo(4.5,Wd/2-1.5);ctx.quadraticCurveTo(0,9,-3,10);ctx.stroke();
+  // 手臂
+  ctx.strokeStyle='#2f6fb0';ctx.lineWidth=5;ctx.lineCap='round';ctx.beginPath();
+  ctx.moveTo(-1,11);ctx.lineTo(hrx,hry);ctx.moveTo(-1,-11);ctx.lineTo(hlx,hly);ctx.stroke();
+  ctx.strokeStyle='#8fc1ee';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(-1,10);ctx.lineTo(hrx,hry-1.2);ctx.moveTo(-1,-12);ctx.lineTo(hlx,hly-1.2);ctx.stroke();
+  // 機身（俯視：以垂直方向漸層做出圓潤感）
+  ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(6,-Wd/2+3,L,Wd);
+  const hasGrip=gripBonus()>0;
+  if(hasGrip){rr(3,-Wd/2-1.2,L+2.4,Wd+2.6,3.6,'#0b0c0f','#3a3d46');ctx.fillStyle='#c1121f';ctx.fillRect(4+L*.3,Wd/2+1.1,L*.4,.9);}   // 電池握把：機身下方多出的一圈與紅線
+  let g=ctx.createLinearGradient(0,-Wd/2,0,Wd/2);g.addColorStop(0,'#4a4d58');g.addColorStop(.35,col);g.addColorStop(1,'#08090b');
+  rr(4,-Wd/2,L,Wd,3,g,'#585d6b');
+  ctx.fillStyle='rgba(255,255,255,.10)';ctx.fillRect(6,-Wd/2+1.2,L-4,1.6);
+  // 右手握把（朝 +y 凸出，帶防滑點與紅線）
+  rr(4+L*.42,Wd/2-1.2,L*.5,4.2,2,'#1a1b1f','#585d6b');
+  ctx.fillStyle='rgba(255,255,255,.22)';for(let k=0;k<5;k++)ctx.fillRect(4+L*.48+k*L*.08,Wd/2+.8,1,1);
+  ctx.fillStyle='#c1121f';ctx.fillRect(4+L*.74,Wd/2-.8,L*.12,1.6);
+  // 後方觀景窗眼罩
+  rr(2.5,-Wd*.2,3,Wd*.4,1,'#0d0d10','#3a3d46');
+  if(dslr){
+    // 五稜鏡 + 熱靴；500D/60D 前方有內建閃光燈蓋
+    rr(4+L*.16,-Wd*.26,L*.44,Wd*.52,2.5,idx===3?'#1c1d22':'#33363f','#6a6f7c');
+    ctx.fillStyle='rgba(255,255,255,.14)';ctx.fillRect(4+L*.2,-Wd*.2,L*.36,1.2);
+    if(idx<=1){rr(4+L*.5,-Wd*.2,L*.1,Wd*.4,1,'#3d414c');}
+    ctx.fillStyle='#c9ccd4';ctx.fillRect(4+L*.28,-Wd*.1,L*.2,Wd*.2);ctx.fillStyle='#2a2c33';ctx.fillRect(4+L*.36,-Wd*.04,L*.04,Wd*.08);
+    ctx.fillStyle='#3d414c';circle(4+L*.78,-Wd*.3,Wd*.13);ctx.fill();ctx.strokeStyle='#777c89';ctx.lineWidth=.6;ctx.stroke();     // 模式轉盤
+    if(idx>=2){rr(4+L*.66,Wd*.12,L*.2,Wd*.18,1,'#6c8a96','#1b1c20');}                                                  // 頂部液晶
+  }else{
+    // EVF 凸起（含熱靴）、模式轉盤、快門鈕
+    rr(4+L*.14,-Wd*.22,L*.3,Wd*.44,2.5,'#30333b','#6a6f7c');
+    ctx.fillStyle='#c9ccd4';ctx.fillRect(4+L*.22,-Wd*.1,L*.16,Wd*.2);
+    ctx.fillStyle='#b9bdc8';circle(4+L*.62,-Wd*.3,Wd*.13);ctx.fill();ctx.fillStyle='#2a2c33';circle(4+L*.62,-Wd*.3,Wd*.07);ctx.fill();
+    ctx.fillStyle='#e63946';circle(4+L*.72,Wd*.28,Wd*.07);ctx.fill();ctx.fillStyle='rgba(255,255,255,.7)';circle(4+L*.72-.5,Wd*.28-.5,Wd*.025);ctx.fill();
+    if(idx>=6)rr(4+L*.5,Wd*.1,L*.2,Wd*.18,1,'#6c8a96','#1b1c20');
+  }
+  if(hasGrip){ctx.fillStyle='#4a4d58';circle(4+L*.6,Wd/2+.9,1.3);ctx.fill();ctx.fillStyle='#1b1c20';circle(4+L*.74,Wd/2+.9,.9);ctx.fill();}   // 握把上的第二組快門與轉盤
+  // 熱靴閃光燈（內建閃光燈與棚燈不裝在熱靴）
+  const fl=curFl(),fi=FLASHES.indexOf(fl);
+  if(fi>=1&&fi<=3){
+    const fx0=4+L*(dslr?.34:.30),fw=5+fi*1.6,fh2=3.6+fi*1.1,hh=2.4+fi*.9;
+    rr(fx0-fw*.5,-fh2/2,fw*.55,fh2,1,'#16171b','#585d6b');                                                   // 本體（機頂）
+    ctx.save();ctx.translate(fx0+fw*.05,0);
+    rr(0,-fh2*.62,fw*.9,fh2*1.24,1.2,'#1d1e23','#6a6f7c');                                                  // 閃光頭（朝前）
+    ctx.fillStyle='#fff6c8';ctx.fillRect(fw*.9-.9,-fh2*.5,1.3,fh2);                                          // 閃光窗
+    if(fi>=2){ctx.fillStyle='#c1121f';ctx.fillRect(1,-fh2*.62,.9,fh2*1.24);}
+    ctx.restore();
+    const ready=P&&P.flashCd<=0&&S.grenades>0;
+    ctx.fillStyle=ready?'#6df08a':'#e04a4a';circle(fx0-fw*.2,fh2*.3,.7);ctx.fill();                          // 回電指示燈
+  }
+  // 換卡：記憶卡從機身側面彈出
+  if(P&&P.reloading){
+    const k=1-P.reloadT/P.reloadMax,out=Math.sin(Math.min(1,k)*Math.PI)*5,ct=curCard().type;
+    rr(4+L*.5,-Wd/2-out,L*.22,out+1.5,.8,ct==='SD'?'#1d4f91':(ct==='CF'?'#e0a526':'#0f1014'),ct==='CFX'?'#5aa7ff':'#cdd');
+    ctx.fillStyle='rgba(255,230,120,.9)';ctx.fillRect(4+L*.5,-Wd/2-out-.8,L*.22*k,.8);
+  }
+  if(pro){ctx.fillStyle='#000';ctx.globalAlpha=.5;ctx.fillRect(4+L*.1,Wd/2-4.2,L*.8,1.1);ctx.globalAlpha=1;}
+  if(idx===7){ctx.fillStyle='#e0a526';ctx.fillRect(4+L*.55,-Wd/2,L*.2,2.2);}
+  // 鏡頭卡口環
+  g=ctx.createLinearGradient(0,-bw/2,0,bw/2);g.addColorStop(0,'#f1f2f5');g.addColorStop(.5,'#8d929e');g.addColorStop(1,'#d3d6dd');
+  ctx.fillStyle=g;ctx.fillRect(mx-1.2,-bw/2-1.2,3,bw+2.4);ctx.fillStyle='#e63946';ctx.fillRect(mx-.6,-bw/2-1.5,1,1.2);
+  // 鏡頭：依真實鏡頭分段（俯視輪廓與側視相同）
+  if(sp){
+    const tot=sp.s.reduce((t,q)=>t+q[0],0),mh=Math.max(...sp.s.map(q=>q[1])),sx=ll/tot,sy=bw/mh;let cx=mx+1.8;
+    sp.s.forEach(q=>{
+      const w=q[0]*sx,h=Math.max(3,q[1]*sy),role=q[2];
+      const base=role==='sil'?'#c9ccd4':(white?'#e9e6dc':(role==='zoom'||role==='foc'||role==='ring'?'#2a2b30':'#1c1d21'));
+      g=ctx.createLinearGradient(0,-h/2,0,h/2);
+      if(white){g.addColorStop(0,'#bdb9ac');g.addColorStop(.3,'#f4f2ea');g.addColorStop(.6,base);g.addColorStop(1,'#8d8a7e');}
+      else{g.addColorStop(0,'#101114');g.addColorStop(.3,role==='zoom'||role==='foc'?'#4a4d58':'#3a3c44');g.addColorStop(.6,base);g.addColorStop(1,'#050506');}
+      rr(cx,-h/2,w,h,Math.min(1.4,h/6),g,white?'#8d8a7e':'#4b505c');
+      if(role==='zoom'||role==='foc'||role==='ring'){ctx.strokeStyle=white?'rgba(0,0,0,.3)':'rgba(190,196,210,.32)';ctx.lineWidth=.6;ctx.beginPath();for(let r=cx+.8;r<cx+w-.5;r+=1.5){ctx.moveTo(r,-h/2+1);ctx.lineTo(r,h/2-1);}ctx.stroke();}
+      cx+=w;
+    });
+    const fh=Math.max(3,sp.s[sp.s.length-1][1]*sy);
+    if(sp.L||white){const lh=Math.max(3,sp.s[sp.s.length-2][1]*sy),rx=cx-sp.s[sp.s.length-1][0]*sx-1.6;ctx.fillStyle='#d11f2b';ctx.fillRect(rx,-lh/2-.3,1.5,lh+.6);}
+    if(sp.hood==='t'){poly([cx,-fh/2-.8,cx+4,-fh/2-2.4,cx+4,fh/2+2.4,cx,fh/2+.8],'#17181b');}
+    else if(sp.hood==='p'){poly([cx,-fh/2-.5,cx+3,-fh/2-4,cx+5,-fh*.2,cx+5,fh*.2,cx+3,fh/2+4,cx,fh/2+.5],'#17181b');}
+    if(sp.collar&&white){rr(mx+ll*.38,bw/2-.5,ll*.16,3.6,1,'#cfcbbf','#8a877c');}
+    // 前端：濾鏡色環與前玻璃反光
+    const fxp=cx+(sp.hood?1:0);
+    ctx.fillStyle=fcol||'#4aa3e0';ctx.globalAlpha=fcol?.8:.85;ctx.beginPath();ctx.ellipse(fxp,0,1.4,fh*.4,0,0,6.2832);ctx.fill();ctx.globalAlpha=1;
+    ctx.fillStyle='rgba(255,255,255,.85)';ctx.fillRect(fxp-.8,-fh*.28,1,fh*.18);
+  }else{
+    rr(mx+1,-bw/2,ll,bw,1.5,white?'#e6e3d9':'#141416','#3a3d46');
+    ctx.fillStyle='#4aa3e0';ctx.beginPath();ctx.ellipse(mx+ll+3,0,1.6,bw*.38,0,0,6.2832);ctx.fill();
+  }
+  // 手
+  ctx.fillStyle='#f1c9a5';circle(hrx,hry,3.2);ctx.fill();circle(hlx,hly,3.2);ctx.fill();
+  ctx.fillStyle='rgba(120,70,40,.35)';circle(hrx+1,hry+1,1.2);ctx.fill();circle(hlx+1,hly+1,1.2);ctx.fill();
+  ctx.restore();
+}
+function drawPlayerBody(){
+  ctx.save();ctx.translate(P.x,P.y);ctx.rotate(P.ang);
+  ctx.fillStyle='rgba(0,0,0,.3)';ctx.beginPath();ctx.ellipse(2,4,17,15,0,0,6.2832);ctx.fill();
+  // 反光板：綁在背後（銀 / 金 / 白），裝備才會出現
+  const rf=accOf('refl');
+  if(rf){const rr0=rf.id==='rf1'?7:(rf.id==='rf2'?8.5:10),gold=rf.id==='rf3',silv=rf.id==='rf2';
+    ctx.fillStyle='#16171b';circle(-17,-3,rr0+1.2);ctx.fill();
+    const gg=ctx.createRadialGradient(-19,-5,1,-17,-3,rr0);gg.addColorStop(0,gold?'#ffe9a3':'#fff');gg.addColorStop(1,gold?'#b8892a':(silv?'#9ea3af':'#d8d9de'));
+    ctx.fillStyle=gg;circle(-17,-3,rr0);ctx.fill();if(silv){ctx.fillStyle='rgba(224,176,74,.7)';ctx.beginPath();ctx.moveTo(-17,-3-rr0);ctx.arc(-17,-3,rr0,-Math.PI/2,Math.PI/2);ctx.closePath();ctx.fill();}}
+  // 背包：依配件顯示（無配件＝小背包；一般＝灰、防水＝藍、硬殼箱＝金屬箱）
+  const bg=accOf('bag');
+  if(!bg){rr(-15,-9,10,18,3,'#3a3f4a','#565c6a');ctx.fillStyle='#e0a526';ctx.fillRect(-13,-1,6,2);}
+  else if(bg.id==='bag3'){rr(-19,-11,14,22,2,'#2d3138','#aab0bd');ctx.strokeStyle='rgba(255,255,255,.18)';ctx.lineWidth=.7;for(let k=-8;k<=8;k+=4){ctx.beginPath();ctx.moveTo(-18,k);ctx.lineTo(-6,k);ctx.stroke();}ctx.fillStyle='#e0a526';ctx.fillRect(-13,-8,3,2.5);ctx.fillRect(-13,5.5,3,2.5);}
+  else{const c=bg.id==='bag2'?'#2b6cb0':'#56606f';rr(-18,-10,13,20,4,c,'#14161a');ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(-16,-5,8,10);ctx.fillStyle='#e0a526';ctx.fillRect(-15,-1,5,2);if(bg.id==='bag2'){ctx.strokeStyle='#bfe3ff';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(-17,-8);ctx.lineTo(-6,-8);ctx.stroke();}}
+  // 腰間備用電池（顆數＝本波剩餘復活次數）
+  const nb=Math.max(0,Math.min(3,S.revives|0));
+  for(let k=0;k<nb;k++){rr(1+k*4.2,9.5,3.6,5,.8,'#1c1d22','#9aa0ae');ctx.fillStyle='#2fa84f';ctx.fillRect(2+k*4.2,10.5,1.6,1.6);ctx.fillStyle='#e0b94a';ctx.fillRect(1.8+k*4.2,9,1.6,.9);}
+  ctx.fillStyle='#3b82c4';ctx.beginPath();ctx.ellipse(-1,0,8,15,0,0,6.2832);ctx.fill();ctx.strokeStyle='#9cc7ee';ctx.lineWidth=1.5;ctx.stroke();  // 肩膀
+  ctx.fillStyle='#c1121f';circle(1,0,8);ctx.fill();ctx.strokeStyle='#7d0c14';ctx.lineWidth=1;ctx.stroke();            // 帽子
+  rr(6,-5,6,10,2,'#8e0e18');ctx.fillStyle='#e8e8ee';circle(0,0,1.6);ctx.fill();
+  ctx.restore();
+}
+function drawMuzzle(ci){
+  const me=34+ci*2.4+(LEXT[curLens().type]||0),mx=P.x+Math.cos(P.ang)*me,my=P.y+Math.sin(P.ang)*me,k=P.muzzle/.05;
+  ctx.save();ctx.translate(mx,my);ctx.rotate(P.ang);ctx.globalCompositeOperation='lighter';
+  const g=ctx.createRadialGradient(0,0,0,0,0,22);g.addColorStop(0,'rgba(255,255,255,'+k+')');g.addColorStop(.4,'rgba(255,220,130,'+.6*k+')');g.addColorStop(1,'rgba(255,200,80,0)');
+  ctx.fillStyle=g;circle(0,0,22);ctx.fill();
+  ctx.strokeStyle='rgba(255,240,180,'+k+')';ctx.lineWidth=2;ctx.beginPath();
+  for(let i=0;i<5;i++){const a=(i-2)*.32,l=16+(i%2)*10;ctx.moveTo(0,0);ctx.lineTo(Math.cos(a)*l,Math.sin(a)*l);}ctx.stroke();
+  ctx.restore();
+}
+/* ---------- 敵人造型（俯視，朝 +x 方向） ---------- */
+function ell(x,y,rx,ry,col){
+  ctx.fillStyle=col;ctx.beginPath();ctx.ellipse(x,y,rx,ry,0,0,Math.PI*2);ctx.fill();ctx.strokeStyle='rgba(0,0,0,.3)';ctx.lineWidth=1;ctx.stroke();
+  if(rx>9&&ry>7&&col.charCodeAt(0)===35){      // 大塊色面加上高光與暗部，增加立體感
+    ctx.fillStyle='rgba(0,0,0,.12)';ctx.beginPath();ctx.ellipse(x+rx*.1,y+ry*.45,rx*.75,ry*.4,0,0,6.2832);ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,.13)';ctx.beginPath();ctx.ellipse(x-rx*.2,y-ry*.3,rx*.6,ry*.38,0,0,6.2832);ctx.fill();
+  }
+}
+function box(x,y,w,h,col){ctx.fillStyle=col;ctx.fillRect(x,y,w,h);ctx.strokeStyle='rgba(0,0,0,.3)';ctx.lineWidth=1;ctx.strokeRect(x,y,w,h);}
+function poly(pts,col){ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(pts[0],pts[1]);for(let i=2;i<pts.length;i+=2)ctx.lineTo(pts[i],pts[i+1]);ctx.closePath();ctx.fill();ctx.strokeStyle='rgba(0,0,0,.3)';ctx.lineWidth=1;ctx.stroke();}
+function line(x1,y1,x2,y2,col,w){ctx.strokeStyle=col;ctx.lineWidth=w;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();}
+function dCat(C,e){
+  const r=e.r,big=e.t==='tank'||e.t==='boss',w=Math.sin(T*7+e.x),p=Math.sin(T*12+e.x)*r*.25;
+  // 尾巴（尾端深色）
+  ctx.strokeStyle=C(e.col);ctx.lineWidth=r*.26;ctx.lineCap='round';ctx.beginPath();
+  ctx.moveTo(-r*.8,0);ctx.quadraticCurveTo(-r*1.5,w*r*.8,-r*1.4,r*.2+w*r*.5);ctx.stroke();
+  ell(-r*1.4,r*.2+w*r*.5,r*.15,r*.15,C('#3a2a22'));
+  // 四隻白色腳掌（交替擺動）
+  for(const sy of [-1,1]){ell(r*.55+p*sy,sy*r*.88,r*.22,r*.16,C('#f4eee6'));ell(-r*.5-p*sy,sy*r*.88,r*.22,r*.16,C('#f4eee6'));}
+  ell(0,0,r,r*.88,C(e.col));
+  ell(-r*.1,0,r*.55,r*.4,C('rgba(255,255,255,.14)'));
+  ctx.strokeStyle=C('rgba(0,0,0,'+(big?.3:.18)+')');ctx.lineWidth=r*.1;
+  for(let k=-1;k<=1;k++){ctx.beginPath();ctx.moveTo(-r*.5+k*r*.35,-r*.7);ctx.lineTo(-r*.5+k*r*.35,r*.7);ctx.stroke();}
+  poly([r*.3,-r*.6,r*.95,-r*1,r*.8,-r*.25],C(e.col));poly([r*.3,r*.6,r*.95,r,r*.8,r*.25],C(e.col));
+  poly([r*.5,-r*.55,r*.88,-r*.85,r*.78,-r*.35],C('#e58c9c'));poly([r*.5,r*.55,r*.88,r*.85,r*.78,r*.35],C('#e58c9c'));
+  ell(r*.55,-r*.3,r*.2,r*.2,C('#e6f06a'));ell(r*.55,r*.3,r*.2,r*.2,C('#e6f06a'));
+  ell(r*.6,-r*.3,r*.07,r*.15,'#111');ell(r*.6,r*.3,r*.07,r*.15,'#111');
+  ell(r*.54,-r*.36,r*.04,r*.04,'#fff');ell(r*.54,r*.24,r*.04,r*.04,'#fff');
+  poly([r*.95,-r*.1,r*.95,r*.1,r*1.12,0],'#e58c9c');
+  ctx.strokeStyle='rgba(255,255,255,.75)';ctx.lineWidth=1;ctx.beginPath();
+  for(const sy of [-1,1]){ctx.moveTo(r*.95,sy*r*.12);ctx.lineTo(r*1.35,sy*r*.4);ctx.moveTo(r*.95,sy*r*.12);ctx.lineTo(r*1.4,sy*r*.12);}ctx.stroke();
+}
+function dDog(C,e){
+  const r=e.r,p=Math.sin(T*14+e.x)*r*.28,fl=Math.sin(T*9+e.y)*.25;
+  ctx.strokeStyle=C(e.col);ctx.lineWidth=r*.24;ctx.lineCap='round';ctx.beginPath();
+  ctx.moveTo(-r*.9,0);ctx.lineTo(-r*1.5,Math.sin(T*14+e.y)*r*.5);ctx.stroke();
+  for(const sy of [-1,1]){ell(r*.5+p*sy,sy*r*.85,r*.24,r*.17,C('#f2e3d0'));ell(-r*.7-p*sy,sy*r*.85,r*.24,r*.17,C('#f2e3d0'));}
+  ell(-r*.1,0,r*1.05,r*.8,C(e.col));
+  ell(-r*.2,r*.25,r*.4,r*.3,C('rgba(0,0,0,.18)'));ell(-r*.5,-r*.2,r*.3,r*.22,C('rgba(255,255,255,.22)'));
+  ell(r*.3,0,r*.14,r*.72,C('#c0392b'));                       // 項圈
+  ell(r*.75,0,r*.62,r*.55,C(e.col));
+  ctx.save();ctx.translate(r*.55,-r*.62);ctx.rotate(-fl);ell(0,0,r*.28,r*.42,C('#6b4423'));ctx.restore();
+  ctx.save();ctx.translate(r*.55,r*.62);ctx.rotate(fl);ell(0,0,r*.28,r*.42,C('#6b4423'));ctx.restore();
+  ell(r*1.15,0,r*.32,r*.26,C('#f2e3d0'));
+  ell(r*1.4,0,r*.1,r*.1,'#111');
+  ell(r*.9,-r*.22,r*.09,r*.09,'#111');ell(r*.9,r*.22,r*.09,r*.09,'#111');
+  ell(r*.88,-r*.25,r*.03,r*.03,'#fff');ell(r*.88,r*.19,r*.03,r*.03,'#fff');
+  if(Math.sin(T*10+e.x)>0)poly([r*1.2,-r*.07,r*1.2,r*.07,r*1.55,0],'#e87a8a');
+}
+function dModel(C,e){
+  const r=e.r,tank=e.t==='tank',boss=e.t==='boss',skin='#f1c9a5',hair=boss?'#2a1a14':'#5a3a22',sw=Math.sin(T*8+e.x)*r*.25;
+  ell(-r*.55,0,r*.85,r*.5,C(hair));ell(-r*.7,0,r*.5,r*.25,C('rgba(255,255,255,.12)'));
+  ctx.strokeStyle=C(skin);ctx.lineWidth=r*.2;ctx.lineCap='round';ctx.beginPath();
+  ctx.moveTo(0,-r*.7);ctx.lineTo(r*.5+sw,-r*.95);ctx.moveTo(0,r*.7);ctx.lineTo(r*.5-sw,r*.95);ctx.stroke();
+  ell(r*.5+sw,-r*.95,r*.14,r*.14,C(skin));ell(r*.5-sw,r*.95,r*.14,r*.14,C(skin));
+  rr(r*.35-sw,r*.95,r*.35,r*.3,r*.06,C(boss?'#e0a526':'#c0396b'),'rgba(0,0,0,.35)');   // 手提包
+  ell(0,0,r*(tank?.9:.55),r*(tank?1.15:.95),C(e.col));
+  ell(-r*.1,-r*.3,r*.22,r*.3,C('rgba(255,255,255,.2)'));
+  ell(r*.2,0,r*.42,r*.42,C(skin));
+  ctx.fillStyle=C(hair);ctx.beginPath();ctx.arc(r*.2,0,r*.44,Math.PI/2,Math.PI*1.5);ctx.fill();
+  box(r*.5,-r*.22,r*.12,r*.44,'#111');
+  if(boss){poly([r*.1,-r*.45,r*.28,-r*.3,r*.28,r*.3,r*.1,r*.45,r*.02,0],C('#e0a526'));}
+  if(Math.sin(T*8+e.x)>.7){ctx.strokeStyle='#fff3a0';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(r*1.1,-r*.9);ctx.lineTo(r*1.1,-r*.4);ctx.moveTo(r*.85,-r*.65);ctx.lineTo(r*1.35,-r*.65);ctx.stroke();}
+}
+function dMoto(C,e){
+  const r=e.r,sp=T*30+e.x;
+  for(const wx of [-r*.72,r*.72]){
+    box(wx-r*.28,-r*.2,r*.56,r*.4,'#111');
+    ctx.strokeStyle='rgba(200,200,210,.6)';ctx.lineWidth=1;ctx.beginPath();for(let k=0;k<3;k++){const x=wx-r*.2+((sp*.4+k*r*.2)%(r*.4));ctx.moveTo(x,-r*.2);ctx.lineTo(x,r*.2);}ctx.stroke();
+  }
+  if(e.t==='runner'||e.t==='boss'){ctx.fillStyle='rgba(255,'+Math.round(150+60*Math.sin(T*40))+',60,.8)';ctx.beginPath();ctx.moveTo(-r,0);ctx.lineTo(-r*(1.5+.3*Math.sin(T*50)),-r*.1);ctx.lineTo(-r*(1.5+.3*Math.sin(T*50)),r*.1);ctx.fill();}
+  box(-r*.9,-r*.28,r*1.76,r*.56,C(e.col));
+  box(-r*.2,-r*.08,r*1.0,r*.16,C('rgba(255,255,255,.35)'));
+  ell(-r*.85,0,r*.08,r*.18,'#ff3b3b');                         // 尾燈
+  ctx.strokeStyle=C('#cfd3da');ctx.lineWidth=r*.12;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(r*.5,-r*.75);ctx.lineTo(r*.5,r*.75);ctx.stroke();
+  ell(r*.5,-r*.8,r*.1,r*.06,C('#9aa'));ell(r*.5,r*.8,r*.1,r*.06,C('#9aa'));
+  ctx.strokeStyle=C('#333');ctx.lineWidth=r*.11;ctx.beginPath();ctx.moveTo(-r*.1,-r*.35);ctx.lineTo(r*.48,-r*.62);ctx.moveTo(-r*.1,r*.35);ctx.lineTo(r*.48,r*.62);ctx.stroke();   // 騎士手臂
+  ell(-r*.15,0,r*.4,r*.62,C('#2b2f38'));
+  ell(r*.05,0,r*.36,r*.36,C(e.t==='boss'?'#e0a526':'#e8e8ee'));
+  ctx.fillStyle='#1a2330';ctx.beginPath();ctx.arc(r*.05,0,r*.36,-1,1);ctx.lineTo(r*.05,0);ctx.fill();   // 面罩
+  ctx.fillStyle='rgba(255,243,160,.35)';ctx.beginPath();ctx.moveTo(r*1.0,-r*.1);ctx.lineTo(r*2.0,-r*.5);ctx.lineTo(r*2.0,r*.5);ctx.lineTo(r*1.0,r*.1);ctx.fill();   // 大燈光束
+  ell(r*1.05,0,r*.12,r*.12,'#fff3a0');
+}
+function dCar(C,e){
+  const r=e.r,sp=T*40+e.x;
+  for(const sx of [-.8,.8])for(const sy of [-1,1]){box(sx*r-r*.3,sy*r*.62-r*.16,r*.6,r*.32,'#111');ctx.fillStyle='rgba(210,210,220,.55)';ctx.fillRect(sx*r-r*.12,sy*r*.62-r*.14,r*.24,r*.28);}
+  box(-r*1.2,-r*.5,r*2.4,r,C(e.col));
+  poly([r*1.2,-r*.35,r*1.7,-r*.1,r*1.7,r*.1,r*1.2,r*.35],C(e.col));
+  box(r*1.45,-r*.95,r*.18,r*1.9,C('#222'));box(-r*1.45,-r*.8,r*.2,r*1.6,C('#222'));
+  box(-r,-r*.1,r*2.2,r*.2,C('#fff'));
+  ell(-r*.1,0,r*.32,r*.32,C(e.t==='boss'?'#e0a526':'#f2f2f7'));
+  ell(-r*.1,0,r*.22,r*.22,C('#1a2330'));                      // 駕駛艙/頭盔
+  box(-r*.5,-r*.62,r*.3,r*.12,C('#2a3140'));box(-r*.5,r*.5,r*.3,r*.12,C('#2a3140'));   // 後視鏡
+  ell(r*1.62,-r*.1,r*.1,r*.07,'#fff3a0');ell(r*1.62,r*.1,r*.1,r*.07,'#fff3a0');
+  ell(-r*1.2,-r*.25,r*.06,r*.1,'#ff3b3b');ell(-r*1.2,r*.25,r*.06,r*.1,'#ff3b3b');
+  if(e.t!=='tank'&&Math.sin(sp)>.2){ctx.fillStyle='rgba(255,190,70,.8)';circle(-r*1.35,rnd(-.2,.2)*r,r*.12);ctx.fill();}
+}
+function dPlane(C,e){
+  const r=e.r;
+  ctx.strokeStyle='rgba(0,0,0,.4)';ctx.lineWidth=1;
+  for(const sy of [-1,1]){
+    poly([r*.3,0,-r*.5,sy*r*1.5,-r*.95,sy*r*1.5,-r*.35,0],C(e.col));
+    poly([-r,0,-r*1.35,sy*r*.6,-r*1.6,sy*r*.6,-r*1.3,0],C(e.col));
+    line(-r*.1,sy*r*.4,-r*.55,sy*r*1.35,'rgba(0,0,0,.22)',1);
+  }
+  ell(0,0,r*1.45,r*.33,C(e.col));
+  ell(-r*.3,0,r*.9,r*.12,C('rgba(255,255,255,.22)'));
+  for(let k=0;k<5;k++)ell(r*(.55-k*.28),0,r*.05,r*.05,'rgba(40,60,90,.8)');   // 舷窗
+  ell(r*.95,0,r*.28,r*.16,'#7fd0ff');
+  poly([-r*1.1,0,-r*1.5,0,-r*1.35,0],C(e.col));ell(-r*1.35,0,r*.22,r*.07,C('#d33'));   // 垂直尾翼
+  if(e.t!=='walker'&&e.t!=='runner'){
+    for(const sy of [-1,1]){ell(-r*.1,sy*r*.75,r*.22,r*.12,'#444');ctx.save();ctx.translate(r*.12,sy*r*.75);ctx.rotate(T*40);box(-r*.02,-r*.14,r*.04,r*.28,'rgba(230,230,230,.6)');ctx.restore();}
+  }
+  const bl=Math.sin(T*6)>0;
+  ell(-r*.9,-r*1.5,r*.07,r*.07,bl?'#ff3b3b':'#661111');ell(-r*.9,r*1.5,r*.07,r*.07,bl?'#3bff6a':'#116622');   // 航行燈
+  if(e.t==='walker'){ctx.save();ctx.translate(r*1.45,0);ctx.rotate(T*30);box(-r*.05,-r*.55,r*.1,r*1.1,'rgba(220,220,220,.7)');ctx.restore();}
+  if(e.t==='boss'){for(let k=0;k<4;k++)box(r*(.45-k*.28),-r*.12,r*.14,r*.24,'rgba(80,160,255,.6)');
+    ctx.fillStyle='rgba(120,190,255,'+(.4+.2*Math.sin(T*30))+')';ctx.beginPath();ctx.moveTo(-r*1.5,0);ctx.lineTo(-r*(2.4+.3*Math.sin(T*40)),-r*.12);ctx.lineTo(-r*(2.4+.3*Math.sin(T*40)),r*.12);ctx.fill();}
+}
+function star5(r,col){const pts=[];for(let k=0;k<10;k++){const a=-Math.PI/2+k*Math.PI/5,rr_=k%2?r*.45:r;pts.push(Math.cos(a)*rr_,Math.sin(a)*rr_);}poly(pts,col);}
+function dBird(C,e){
+  const r=e.r,sp=.5+.5*Math.abs(Math.sin(T*18+e.x)),boss=e.t==='boss';
+  poly([-r*.9,-r*.35,-r*1.5,-r*.25,-r*1.4,0,-r*1.5,r*.25,-r*.9,r*.35],C(e.col));
+  for(const sy of [-1,1]){
+    ctx.fillStyle=C(e.col);ctx.beginPath();
+    ctx.moveTo(r*.3,0);ctx.lineTo(-r*.1,sy*r*1.6*sp);ctx.lineTo(-r*.9,sy*r*1.4*sp);ctx.lineTo(-r*.6,0);ctx.closePath();ctx.fill();
+    ctx.strokeStyle='rgba(0,0,0,.3)';ctx.lineWidth=1;ctx.stroke();
+    ctx.strokeStyle='rgba(0,0,0,.2)';ctx.beginPath();for(let k=0;k<4;k++){const t=k/4;ctx.moveTo(r*.2-r*t*.5,sy*r*.1);ctx.lineTo(-r*.1-r*t*.8,sy*r*(1.5*sp)*(1-t*.1));}ctx.stroke();
+    ell(-r*.5,sy*r*1.45*sp,r*.3,r*.1*sp+.5,C('rgba(0,0,0,.28)'));
+  }
+  ell(0,0,r*.95,r*.42,C(e.col));ell(-r*.1,0,r*.6,r*.18,C('rgba(255,255,255,.2)'));
+  ell(r*.85,0,r*.38,r*.34,C(boss?'#f4f4f4':e.col));
+  if(boss){poly([r*.7,-r*.1,r*.4,-r*.3,r*.45,0],'#f4f4f4');}
+  poly([r*1.15,-r*.12,r*1.15,r*.12,r*1.5,0],'#f0b429');
+  ell(r*.95,-r*.14,r*.08,r*.08,'#fff');ell(r*.95,r*.14,r*.08,r*.08,'#fff');ell(r*.97,-r*.14,r*.045,r*.045,'#111');ell(r*.97,r*.14,r*.045,r*.045,'#111');
+}
+function dNature(C,e){
+  const r=e.r;
+  if(e.t==='walker'){
+    ctx.save();ctx.rotate(T*.6+e.x);
+    for(let k=0;k<6;k++){ctx.save();ctx.rotate(k*Math.PI/3);ell(r*.6,0,r*.5,r*.28,C(e.col));ell(r*.7,0,r*.28,r*.12,C('rgba(255,255,255,.3)'));ctx.restore();}
+    ctx.restore();ell(0,0,r*.28,r*.28,C('#f7c948'));ell(-r*.06,-r*.06,r*.1,r*.1,C('#fff0a0'));
+  }else if(e.t==='runner'){
+    ctx.strokeStyle=C('#cfcfc4');ctx.lineWidth=1.2;
+    for(let k=0;k<12;k++){const a=k*Math.PI/6+T;ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(Math.cos(a)*r,Math.sin(a)*r);ctx.stroke();ell(Math.cos(a)*r,Math.sin(a)*r,r*.13,r*.13,C(e.col));ell(Math.cos(a)*r*1.12,Math.sin(a)*r*1.12,r*.05,r*.05,C('rgba(255,255,255,.7)'));}
+    ell(0,0,r*.25,r*.25,C('#8a8a7a'));
+  }else if(e.t==='tank'){
+    const pts=[];for(let k=0;k<8;k++){const a=k*Math.PI/4,rr_=r*(.85+.15*Math.sin(k*2.3+1));pts.push(Math.cos(a)*rr_,Math.sin(a)*rr_);}
+    poly(pts,C(e.col));poly([-r*.5,-r*.4,r*.1,-r*.7,r*.4,-r*.2,-r*.1,0],C('rgba(255,255,255,.22)'));
+    poly([r*.4,-r*.2,r*.8,r*.3,r*.3,r*.7,-r*.1,0],C('rgba(0,0,0,.2)'));
+    line(-r*.2,r*.1,r*.1,r*.45,'rgba(0,0,0,.45)',1.5);line(r*.1,r*.45,r*.05,r*.7,'rgba(0,0,0,.45)',1.5);
+    ell(r*.3,r*.3,r*.2,r*.12,C('#5c8a4a'));ell(-r*.4,r*.35,r*.14,r*.09,C('#5c8a4a'));
+  }else{
+    ell(r*.15,r*.15,r*.95,r*.95,C('rgba(0,0,0,.35)'));
+    for(let k=0;k<5;k++){const a=k*1.256+.4;line(0,0,Math.cos(a)*r*.9,Math.sin(a)*r*.9,C('#5a3a1e'),r*.12);}
+    for(const [x,y,k] of [[-.4,-.3,.62],[.4,-.25,.6],[-.1,.45,.65],[.05,0,.8]]){ell(x*r,y*r,r*k,r*k,C(k>.7?'#3f9a4c':e.col));ell(x*r-r*k*.25,y*r-r*k*.25,r*k*.45,r*k*.35,C('rgba(255,255,255,.14)'));}
+    for(const [x,y] of [[-.5,.1],[.45,.35],[.1,-.5]])ell(x*r,y*r,r*.08,r*.08,C('#e0392f'));
+    ell(0,0,r*.2,r*.2,C('#6b4423'));
+  }
+}
+function dSpace(C,e){
+  const r=e.r;
+  if(e.t==='walker'){
+    ctx.fillStyle='rgba(255,246,170,.16)';circle(0,0,r*1.7);ctx.fill();
+    ctx.save();ctx.rotate(T*2+e.x);star5(r*(1+.08*Math.sin(T*9+e.x)),C(e.col));ctx.restore();ell(0,0,r*.22,r*.22,C('#fff6c0'));
+  }else if(e.t==='runner'){
+    poly([-r*.2,-r*.5,-r*(e.ds===2?3.4:2.2),0,-r*.2,r*.5],C('rgba(255,210,140,.55)'));
+    ctx.fillStyle='rgba(255,255,255,.8)';for(let k=0;k<4;k++){const t=(T*3+k*.25)%1;circle(-r*(.4+t*1.8),Math.sin(k*5+T*4)*r*.3,1.4*(1-t));ctx.fill();}
+    ell(0,0,r*.85,r*.85,C('rgba(255,240,200,.25)'));ell(0,0,r*.6,r*.6,C(e.col));ell(-r*.1,-r*.12,r*.25,r*.2,C('rgba(255,255,255,.35)'));
+  }else if(e.t==='tank'){
+    ell(0,0,r,r,C(e.col));
+    for(const [x,y,k] of [[-.3,-.2,.25],[.35,.15,.2],[-.1,.45,.15],[.2,-.5,.15]]){ell(x*r,y*r,r*k,r*k,C('rgba(0,0,0,.25)'));ell(x*r-r*k*.15,y*r-r*k*.15,r*k*.65,r*k*.65,C('rgba(255,255,255,.1)'));}
+    ell(-r*.3,-r*.35,r*.4,r*.28,C('rgba(255,255,255,.14)'));
+  }else{
+    ctx.save();ctx.rotate(-.4);ctx.strokeStyle=C('#f2d9a0');ctx.lineWidth=r*.16;
+    ctx.beginPath();ctx.ellipse(0,0,r*1.5,r*.5,0,Math.PI,Math.PI*2);ctx.stroke();
+    ctx.strokeStyle=C('#d8b878');ctx.lineWidth=r*.07;ctx.beginPath();ctx.ellipse(0,0,r*1.7,r*.58,0,Math.PI,Math.PI*2);ctx.stroke();
+    ell(0,0,r*.9,r*.9,C(e.col));
+    ctx.save();ctx.beginPath();ctx.arc(0,0,r*.9,0,Math.PI*2);ctx.clip();
+    for(const [y,h,c] of [[-.5,.16,'rgba(150,100,40,.35)'],[-.1,.22,'rgba(255,240,200,.28)'],[.35,.18,'rgba(130,80,30,.35)']]){ctx.fillStyle=c;ctx.fillRect(-r,y*r,r*2,h*r);}
+    ctx.restore();
+    ell(-r*.3,-r*.3,r*.3,r*.2,'rgba(255,255,255,.16)');
+    ctx.strokeStyle=C('#f2d9a0');ctx.lineWidth=r*.16;ctx.beginPath();ctx.ellipse(0,0,r*1.5,r*.5,0,0,Math.PI);ctx.stroke();
+    ctx.strokeStyle=C('#d8b878');ctx.lineWidth=r*.07;ctx.beginPath();ctx.ellipse(0,0,r*1.7,r*.58,0,0,Math.PI);ctx.stroke();ctx.restore();
+  }
+}
+function dSport(C,e){
+  const r=e.r;
+  if(e.t==='boss'){
+    const sw=Math.sin(T*9+e.x)*r*.25;
+    ctx.rotate(e.ang);
+    ctx.strokeStyle=C('#f1c9a5');ctx.lineWidth=r*.22;ctx.lineCap='round';ctx.beginPath();
+    ctx.moveTo(0,-r*.7);ctx.lineTo(r*.55+sw,-r*.95);ctx.moveTo(0,r*.7);ctx.lineTo(r*.55-sw,r*.95);ctx.stroke();
+    ell(0,0,r*.6,r,C(e.col));box(-r*.3,-r*.06,r*.6,r*.12,C('#fff'));
+    ell(-r*.1,-r*.45,r*.25,r*.3,C('rgba(255,255,255,.18)'));
+    ell(r*.2,0,r*.4,r*.4,C('#f1c9a5'));box(r*.1,-r*.4,r*.14,r*.8,C('#e63946'));
+    ell(r*.42,-r*.12,r*.05,r*.05,'#111');ell(r*.42,r*.12,r*.05,r*.05,'#111');
+    return;
+  }
+  const spin=T*6+e.x*.05;
+  ctx.rotate(spin);
+  ell(0,0,r,r,C(e.col));
+  if(e.t==='walker'){
+    poly([0,-r*.35,r*.33,-r*.1,r*.2,r*.28,-r*.2,r*.28,-r*.33,-r*.1],C('#222'));
+    for(let k=0;k<5;k++){const a=k*Math.PI*2/5-Math.PI/2;ell(Math.cos(a)*r*.72,Math.sin(a)*r*.72,r*.16,r*.16,C('#222'));}
+  }else if(e.t==='runner'){
+    ctx.strokeStyle=C('#fff');ctx.lineWidth=r*.14;
+    ctx.beginPath();ctx.arc(-r,0,r*.9,-.9,.9);ctx.stroke();ctx.beginPath();ctx.arc(r,0,r*.9,Math.PI-.9,Math.PI+.9);ctx.stroke();
+  }else{
+    ctx.strokeStyle=C('#2a1608');ctx.lineWidth=r*.1;
+    ctx.beginPath();ctx.moveTo(-r,0);ctx.lineTo(r,0);ctx.moveTo(0,-r);ctx.lineTo(0,r);ctx.stroke();
+    ctx.beginPath();ctx.arc(-r*1.1,0,r*.75,-.9,.9);ctx.stroke();ctx.beginPath();ctx.arc(r*1.1,0,r*.75,Math.PI-.9,Math.PI+.9);ctx.stroke();
+  }
+  ctx.rotate(-spin);ell(-r*.3,-r*.32,r*.34,r*.2,'rgba(255,255,255,.3)');   // 高光
+}
+function drawEnemy(e){
+  const th=THEMES[e.th],hit=e.hit>0,C=c=>hit?'#fff':c,fly=th.label==='飛機'||th.label==='鳥類',boss=e.t==='boss';
+  // 地面陰影
+  ctx.fillStyle='rgba(0,0,0,'+(fly?.16:.28)+')';ctx.beginPath();
+  ctx.ellipse(e.x+(fly?10:3),e.y+(fly?16:5),e.r*(fly?1.1:1),e.r*(fly?.55:.75),0,0,6.2832);ctx.fill();
+  if(boss){      // Boss 光環
+    const g=ctx.createRadialGradient(e.x,e.y,e.r*.5,e.x,e.y,e.r*2.1);
+    g.addColorStop(0,'rgba(255,200,90,.28)');g.addColorStop(1,'rgba(255,200,90,0)');ctx.fillStyle=g;circle(e.x,e.y,e.r*2.1);ctx.fill();
+    ctx.save();ctx.translate(e.x,e.y);ctx.rotate(T*.8);ctx.setLineDash([10,12]);ctx.strokeStyle='rgba(255,210,120,.45)';ctx.lineWidth=2;circle(0,0,e.r*1.6);ctx.stroke();ctx.setLineDash([]);ctx.restore();
+  }
+  if(e.ds===1&&e.stun<=0){        // 衝刺預警
+    ctx.save();ctx.translate(e.x,e.y);ctx.rotate(e.ang);ctx.fillStyle='rgba(255,60,60,'+(.12+.1*Math.sin(T*30))+')';
+    ctx.fillRect(0,-e.r*.7,300,e.r*1.4);ctx.restore();
+    ctx.fillStyle='#ff4d4d';ctx.font='bold 18px '+FONT;ctx.textAlign='center';ctx.fillText('!',e.x,e.y-e.r-8);
+  }
+  if(e.cast){ctx.strokeStyle='rgba('+e.cast.sk.c+','+(.5+.4*Math.sin(T*20))+')';ctx.lineWidth=3;circle(e.x,e.y,e.r+8);ctx.stroke();}
+  if(e.enr){ctx.strokeStyle='rgba(255,60,60,.55)';ctx.lineWidth=2;circle(e.x,e.y,e.r+14+Math.sin(T*8)*2);ctx.stroke();}
+  const sq=boss?0:.05*Math.sin(T*(9+e.sp*.02)+e.x*.07+e.y*.05),age=T-(e.born||-9),spawn=age<.5,ss=spawn?.55+.45*(1-Math.pow(1-age/.5,2)):1;
+  if(spawn){ctx.globalAlpha=clamp(age/.3,0,1);ctx.strokeStyle='rgba(255,255,255,'+(.6*(1-age/.5))+')';ctx.lineWidth=2;circle(e.x,e.y,e.r*(2.2-1.4*age/.5));ctx.stroke();}
+  ctx.save();ctx.translate(e.x,e.y);if(!th.norot)ctx.rotate(e.ang);ctx.scale((1+sq)*ss,(1-sq)*ss);th.draw(C,e);ctx.restore();ctx.globalAlpha=1;
+  if(boss){
+    const cy=e.y-e.r*1.3;
+    ctx.fillStyle='#f0c24a';ctx.beginPath();ctx.moveTo(e.x-14,cy-2);ctx.lineTo(e.x-14,cy-12);ctx.lineTo(e.x-7,cy-6);ctx.lineTo(e.x,cy-14);ctx.lineTo(e.x+7,cy-6);ctx.lineTo(e.x+14,cy-12);ctx.lineTo(e.x+14,cy-2);ctx.closePath();ctx.fill();
+    ctx.strokeStyle='#8a6a14';ctx.lineWidth=1;ctx.stroke();
+    ctx.fillStyle='#fff';ctx.font='bold 12px '+FONT;ctx.textAlign='center';ctx.fillText(e.name,e.x,cy-18);
+  }
+}
+/* ---------- 背景（依主題預先繪製） ---------- */
+const bgCache={};
+function rng(seed){let s=seed;return()=>{s=(s*1664525+1013904223)%4294967296;return s/4294967296;};}
+function paintBg(g,ti){
+  const lab=THEMES[ti].label,R=rng(ti*977+13);
+  const fill=c=>{g.fillStyle=c;g.fillRect(0,0,W,H);};
+  const grad=(c1,c2)=>{const q=g.createLinearGradient(0,0,0,H);q.addColorStop(0,c1);q.addColorStop(1,c2);g.fillStyle=q;g.fillRect(0,0,W,H);};
+  const blob=(x,y,r,c)=>{const q=g.createRadialGradient(x,y,0,x,y,r);q.addColorStop(0,c);q.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=q;g.fillRect(x-r,y-r,r*2,r*2);};
+  const grass=(a,b,n)=>{grad(a,b);for(let i=0;i<n;i++){const x=R()*W,y=R()*H;g.strokeStyle=R()<.5?'rgba(130,210,110,.26)':'rgba(8,36,14,.35)';g.lineWidth=1;g.beginPath();g.moveTo(x,y);g.lineTo(x+R()*4-2,y-4-R()*5);g.stroke();}};
+  if(lab==='風景'){
+    grass('#1f3f25','#2a5430',460);
+    g.strokeStyle='rgba(80,140,190,.4)';g.lineWidth=28;g.beginPath();g.moveTo(-10,H*.8);g.bezierCurveTo(W*.25,H*.6,W*.5,H*.98,W+10,H*.7);g.stroke();
+    g.strokeStyle='rgba(190,225,255,.22)';g.lineWidth=9;g.stroke();
+    for(let i=0;i<50;i++){g.globalAlpha=.75;g.fillStyle=['#ff9ec7','#fff3c0','#ffffff','#ffd166'][i%4];g.beginPath();g.arc(R()*W,R()*H,2+R()*1.6,0,6.283);g.fill();}
+    g.globalAlpha=1;
+    for(let i=0;i<7;i++){const x=R()*W,y=R()*H;g.fillStyle='rgba(0,0,0,.25)';g.beginPath();g.ellipse(x+3,y+4,16,10,0,0,6.283);g.fill();g.fillStyle='#6b7280';g.beginPath();g.ellipse(x,y,15,9,.3,0,6.283);g.fill();g.fillStyle='rgba(255,255,255,.14)';g.beginPath();g.ellipse(x-4,y-3,7,3.5,.3,0,6.283);g.fill();}
+  }else if(lab==='貓咪'){
+    fill('#3b2d23');
+    for(let y=0;y<H;y+=36){g.fillStyle=(y/36)%2?'#3f3026':'#37291f';g.fillRect(0,y,W,36);g.fillStyle='rgba(0,0,0,.3)';g.fillRect(0,y,W,1.5);const off=((y/36)%3)*110;for(let x=-off;x<W;x+=330)g.fillRect(x,y,1.5,36);}
+    g.fillStyle='#5b3144';g.beginPath();g.ellipse(W/2,H/2,260,155,0,0,6.283);g.fill();g.strokeStyle='#d9a441';g.lineWidth=4;g.stroke();
+    g.strokeStyle='rgba(255,255,255,.12)';g.lineWidth=2;g.beginPath();g.ellipse(W/2,H/2,222,125,0,0,6.283);g.stroke();
+    for(let i=0;i<14;i++){const a=i/14*6.283,x=W/2+Math.cos(a)*240,y=H/2+Math.sin(a)*145;g.fillStyle='rgba(217,164,65,.55)';g.fillRect(x-1,y-1,3,3);}
+    for(const [x,y,c] of [[110,90,'#d94f6b'],[860,500,'#4f9ad9']]){g.fillStyle='rgba(0,0,0,.3)';g.beginPath();g.arc(x+3,y+4,16,0,6.283);g.fill();g.fillStyle=c;g.beginPath();g.arc(x,y,15,0,6.283);g.fill();g.strokeStyle='rgba(255,255,255,.3)';g.lineWidth=1;for(let k=0;k<4;k++){g.beginPath();g.arc(x,y,5+k*3,k,k+2.5);g.stroke();}}
+  }else if(lab==='狗狗'){
+    grass('#2c4b27','#365a2f',500);
+    g.fillStyle='rgba(150,120,75,.55)';g.beginPath();g.moveTo(-10,H*.3);g.bezierCurveTo(W*.3,H*.15,W*.6,H*.6,W+10,H*.45);g.lineTo(W+10,H*.62);g.bezierCurveTo(W*.6,H*.78,W*.3,H*.33,-10,H*.48);g.fill();
+    for(let i=0;i<14;i++){const t=i/13,x=t*W,y=H*.39+Math.sin(t*3.4)*H*.1+(i%2?8:-8);g.fillStyle='rgba(60,40,20,.45)';g.beginPath();g.ellipse(x,y,5,4,0,0,6.283);g.fill();for(const [dx,dy] of [[-5,-6],[0,-8],[5,-6]]){g.beginPath();g.arc(x+dx,y+dy,1.8,0,6.283);g.fill();}}
+    for(const [x,y] of [[140,470],[800,120]]){g.fillStyle='rgba(0,0,0,.28)';g.beginPath();g.ellipse(x+5,y+9,34,16,0,0,6.283);g.fill();g.fillStyle='#4a3622';g.fillRect(x-4,y-8,8,22);g.fillStyle='#2f7a38';g.beginPath();g.arc(x,y-14,26,0,6.283);g.fill();g.fillStyle='rgba(255,255,255,.1)';g.beginPath();g.arc(x-7,y-21,12,0,6.283);g.fill();}
+  }else if(lab==='模特兒'){
+    fill('#16161d');
+    g.fillStyle='#2a2a36';g.fillRect(W*.22,0,W*.56,H);
+    const q=g.createLinearGradient(W*.22,0,W*.78,0);q.addColorStop(0,'rgba(255,255,255,.07)');q.addColorStop(.5,'rgba(255,255,255,0)');q.addColorStop(1,'rgba(255,255,255,.07)');g.fillStyle=q;g.fillRect(W*.22,0,W*.56,H);
+    g.fillStyle='rgba(255,255,255,.5)';g.fillRect(W*.22-2,0,2,H);g.fillRect(W*.78,0,2,H);
+    for(let y=20;y<H;y+=50){g.fillStyle='rgba(255,240,180,.55)';g.fillRect(W*.22-6,y,3,3);g.fillRect(W*.78+5,y,3,3);}
+    for(const x of [W*.3,W*.5,W*.7])blob(x,H*.5,230,'rgba(255,255,255,.1)');
+    for(let i=0;i<8;i++){g.fillStyle='rgba(255,255,255,.03)';g.fillRect(W*.22,i*80+10,W*.56,2);}
+  }else if(lab==='重機'){
+    fill('#202328');
+    for(let i=0;i<1500;i++){g.fillStyle='rgba('+(R()<.5?'255,255,255':'0,0,0')+','+(.03+R()*.05)+')';g.fillRect(R()*W,R()*H,1.5,1.5);}
+    for(let i=0;i<5;i++)blob(R()*W,R()*H,40+R()*50,'rgba(0,0,0,.35)');
+    g.fillStyle='rgba(240,200,60,.55)';for(let x=10;x<W;x+=70)g.fillRect(x,H/2-3,40,6);
+    g.fillStyle='rgba(255,255,255,.35)';g.fillRect(0,34,W,3);g.fillRect(0,H-37,W,3);
+    for(let i=0;i<4;i++){g.strokeStyle='rgba(0,0,0,.35)';g.lineWidth=5;g.beginPath();const y=100+R()*400;g.moveTo(R()*200,y);g.bezierCurveTo(300,y+30,600,y-40,W,y+20);g.stroke();}
+  }else if(lab==='賽車'){
+    fill('#1c1e23');
+    for(let i=0;i<1100;i++){g.fillStyle='rgba(255,255,255,'+(.02+R()*.04)+')';g.fillRect(R()*W,R()*H,1.5,1.5);}
+    for(let x=0;x<W;x+=30){g.fillStyle=(x/30)%2?'#d62828':'#f1f1f1';g.fillRect(x,0,30,16);g.fillRect(x,H-16,30,16);}
+    g.fillStyle='rgba(0,0,0,.35)';g.fillRect(0,16,W,6);g.fillRect(0,H-22,W,6);
+    g.fillStyle='rgba(255,255,255,.4)';for(let x=10;x<W;x+=60)g.fillRect(x,H/2-2,30,4);
+    for(let r=0;r<6;r++)for(let c=0;c<2;c++){g.fillStyle=(r+c)%2?'#f5f5f5':'#222';g.fillRect(W*.9+c*14,60+r*14,14,14);}
+    for(let i=0;i<5;i++){g.strokeStyle='rgba(0,0,0,.4)';g.lineWidth=6;g.beginPath();const y=90+R()*420;g.moveTo(R()*300,y);g.lineTo(W-R()*300,y+R()*30-15);g.stroke();}
+  }else if(lab==='飛機'){
+    fill('#2a2e35');
+    for(let i=0;i<1200;i++){g.fillStyle='rgba(255,255,255,'+(.02+R()*.04)+')';g.fillRect(R()*W,R()*H,1.5,1.5);}
+    g.fillStyle='rgba(235,235,235,.6)';for(let x=20;x<W;x+=90)g.fillRect(x,H/2-5,52,10);
+    g.fillStyle='rgba(240,200,60,.7)';g.fillRect(0,H*.2,W,3);g.fillRect(0,H*.8,W,3);
+    for(let x=0;x<W;x+=40){g.fillStyle='rgba(255,230,120,.8)';g.fillRect(x,H*.2-14,3,3);g.fillRect(x,H*.8+14,3,3);}
+    g.fillStyle='rgba(255,255,255,.45)';g.font='bold 74px sans-serif';g.textAlign='center';g.fillText('27',W*.08,H/2+26);g.fillText('09',W*.92,H/2+26);
+    g.strokeStyle='rgba(255,255,255,.28)';g.lineWidth=4;g.strokeRect(W*.3,H*.28,W*.4,H*.44);
+  }else if(lab==='星空'){
+    grad('#04050e','#0c1233');
+    blob(W*.25,H*.3,300,'rgba(120,60,180,.28)');blob(W*.75,H*.7,330,'rgba(40,100,200,.25)');blob(W*.55,H*.2,200,'rgba(200,80,140,.14)');
+    for(let i=0;i<260;i++){const a=.25+R()*.75,s=R()<.08?2.2:(R()<.4?1.3:.8);g.fillStyle='rgba(255,255,'+(200+Math.floor(R()*55))+','+a+')';g.fillRect(R()*W,R()*H,s,s);}
+    for(let i=0;i<9;i++){const x=R()*W,y=R()*H;g.strokeStyle='rgba(255,255,255,.5)';g.lineWidth=1;g.beginPath();g.moveTo(x-6,y);g.lineTo(x+6,y);g.moveTo(x,y-6);g.lineTo(x,y+6);g.stroke();}
+  }else if(lab==='體育'){
+    fill('#2b5d2e');
+    for(let x=0;x<W;x+=80){g.fillStyle=(x/80)%2?'#2f6632':'#285a2b';g.fillRect(x,0,80,H);}
+    g.strokeStyle='rgba(255,255,255,.7)';g.lineWidth=3;g.strokeRect(40,40,W-80,H-80);g.beginPath();g.moveTo(W/2,40);g.lineTo(W/2,H-40);g.stroke();
+    g.beginPath();g.arc(W/2,H/2,70,0,6.283);g.stroke();g.strokeRect(40,H/2-110,130,220);g.strokeRect(W-170,H/2-110,130,220);
+    g.fillStyle='rgba(255,255,255,.7)';g.beginPath();g.arc(W/2,H/2,4,0,6.283);g.fill();
+  }else{ // 鳥類：天空
+    grad('#1b3b63','#86b9df');
+    for(let i=0;i<16;i++){const x=R()*W,y=R()*H,s=.6+R()*1.1;for(let k=0;k<5;k++){g.fillStyle='rgba(255,255,255,'+(.08+R()*.1)+')';g.beginPath();g.ellipse(x+k*26*s-50*s,y+Math.sin(k*2)*8*s,38*s,17*s,0,0,6.283);g.fill();}}
+    blob(W*.82,H*.12,170,'rgba(255,240,190,.35)');
+  }
+  const v=g.createRadialGradient(W/2,H/2,H*.38,W/2,H/2,W*.62);v.addColorStop(0,'rgba(0,0,0,0)');v.addColorStop(1,'rgba(0,0,0,.5)');g.fillStyle=v;g.fillRect(0,0,W,H);
+}
+function drawAmbient(ti){
+  const lab=THEMES[ti].label,n=34,mod=(v,m)=>((v%m)+m)%m;
+  for(let i=0;i<n;i++){
+    const h=(i*2654435761)%4294967296,a=(h%1000)/1000,b=((h>>>10)%1000)/1000,c=((h>>>20)%1000)/1000;
+    let x,y;
+    if(lab==='風景'||lab==='狗狗'){      // 花瓣 / 落葉
+      x=mod(a*W+T*(18+c*14),W+40)-20;y=mod(b*H+T*(26+c*18),H+40)-20+Math.sin(T*1.5+i)*14;
+      ctx.save();ctx.translate(x,y);ctx.rotate(T*1.4+i);
+      ctx.fillStyle=lab==='風景'?(i%2?'rgba(255,170,205,.55)':'rgba(255,255,255,.5)'):(i%2?'rgba(190,200,80,.5)':'rgba(120,170,70,.5)');
+      ctx.beginPath();ctx.ellipse(0,0,4,2,0,0,6.2832);ctx.fill();ctx.restore();
+    }else if(lab==='貓咪'){
+      x=mod(a*W+Math.sin(T*.3+i)*30+T*6,W);y=mod(b*H-T*(8+c*6),H);
+      ctx.fillStyle='rgba(255,235,200,'+(.12+.1*Math.sin(T+i))+')';circle(x,y,1.4+c*1.6);ctx.fill();
+    }else if(lab==='模特兒'){
+      x=a*W;y=b*H;const al=Math.max(0,Math.sin(T*(1.5+c*2)+i*3));
+      ctx.strokeStyle='rgba(255,230,150,'+(.55*al)+')';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x-4,y);ctx.lineTo(x+4,y);ctx.moveTo(x,y-4);ctx.lineTo(x,y+4);ctx.stroke();
+    }else if(lab==='重機'||lab==='賽車'||lab==='飛機'){
+      const sp=lab==='飛機'?260:520;x=mod(a*W-T*(sp+c*300),W+80)-40;y=b*H;
+      ctx.strokeStyle='rgba(255,255,255,'+(.05+c*.07)+')';ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+30+c*50,y);ctx.stroke();
+    }else if(lab==='星空'){
+      x=a*W;y=b*H;const al=.25+.6*Math.abs(Math.sin(T*(.8+c*2)+i));
+      ctx.fillStyle='rgba(255,255,235,'+al+')';circle(x,y,.8+c*1.4);ctx.fill();
+    }else if(lab==='體育'){
+      x=mod(a*W+Math.sin(T+i)*16,W);y=mod(b*H+T*(40+c*40),H);
+      ctx.save();ctx.translate(x,y);ctx.rotate(T*3+i);ctx.fillStyle=['#e63946','#ffd166','#4aa3e0','#7fe08a'][i%4];ctx.globalAlpha=.55;ctx.fillRect(-3,-1.5,6,3);ctx.restore();ctx.globalAlpha=1;
+    }else{
+      x=mod(a*W+T*(14+c*10),W+60)-30;y=mod(b*H+Math.sin(T*.7+i)*20,H);
+      ctx.fillStyle='rgba(255,255,255,'+(.16+c*.1)+')';ctx.beginPath();ctx.ellipse(x,y,7,1.8,Math.sin(T+i)*.4,0,6.2832);ctx.fill();
+    }
+  }
+  if(lab==='鳥類'){for(let k=0;k<3;k++){const x=mod(k*400+T*9,W+500)-250,y=90+k*190;ctx.fillStyle='rgba(255,255,255,.07)';ctx.beginPath();ctx.ellipse(x,y,170,38,0,0,6.2832);ctx.fill();}}
+  if(lab==='星空'){const t=(T%7)/.9;if(t<1){const x=W*.15+t*W*.5,y=40+t*H*.35;ctx.strokeStyle='rgba(255,255,255,'+(1-t)+')';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x-70,y-30);ctx.stroke();}}
+}
+function bgFor(ti){
+  if(bgCache[ti]!==undefined)return bgCache[ti];
+  let c=null;
+  try{c=document.createElement('canvas');c.width=W;c.height=H;paintBg(c.getContext('2d'),ti);}catch(err){c=null;}
+  bgCache[ti]=c;return c;
+}
+function draw(){
+  const cam=curCam(),card=curCard(),fl=curFl(),ci=CAMERAS.indexOf(cam),lens=curLens();
+  ctx.save();
+  ctx.fillStyle='#0d0e11';ctx.fillRect(-20,-20,W+40,H+40);
+  if(shakeT>0)ctx.translate(rnd(-1,1)*shakeT*12,rnd(-1,1)*shakeT*12);
+  const bg=bgFor(themeIdx(Math.max(1,S.wave)));
+  if(bg)ctx.drawImage(bg,0,0);
+  else{
+    ctx.fillStyle='#15171c';ctx.fillRect(0,0,W,H);
+    ctx.strokeStyle='rgba(255,255,255,.035)';ctx.lineWidth=1;ctx.beginPath();
+    for(let x=0;x<=W;x+=40){ctx.moveTo(x,0);ctx.lineTo(x,H);}
+    for(let y=0;y<=H;y+=40){ctx.moveTo(0,y);ctx.lineTo(W,y);}
+    ctx.stroke();
+  }
+  // 殘影
+  for(const d of decals){ctx.globalAlpha=.3*(1-d.t/d.dur);ctx.fillStyle=d.col;for(const b of d.bl){ctx.beginPath();ctx.ellipse(d.x+b[0],d.y+b[1],b[2],b[3],b[4],0,6.2832);ctx.fill();}}
+  ctx.globalAlpha=1;
+  drawAmbient(themeIdx(Math.max(1,S.wave)));
+  // 掉落物
+  for(const d of drops){
+    const bl=d.life<3&&Math.floor(T*8)%2===0;if(bl)continue;
+    const bob=Math.sin(T*4+d.x)*2;
+    ctx.fillStyle='rgba(0,0,0,.3)';ctx.beginPath();ctx.ellipse(d.x+2,d.y+12,9,3.5,0,0,6.2832);ctx.fill();
+    if(d.type==='ammo'){
+      ctx.fillStyle='rgba(120,190,255,'+(.14+.06*Math.sin(T*5))+')';circle(d.x,d.y+bob,18);ctx.fill();
+      poly([d.x-8,d.y-10+bob,d.x+3,d.y-10+bob,d.x+8,d.y-5+bob,d.x+8,d.y+10+bob,d.x-8,d.y+10+bob],'#2b6cb0');
+      ctx.fillStyle='#e0a526';for(let k=0;k<4;k++)ctx.fillRect(d.x-6+k*3.2,d.y+5+bob,2,4);
+      ctx.fillStyle='#fff';ctx.fillRect(d.x-5,d.y-6+bob,9,5);ctx.fillStyle='#2b6cb0';ctx.fillRect(d.x-4,d.y-4.5+bob,5,1.2);
+    }else{
+      ctx.fillStyle='rgba(120,255,150,'+(.14+.06*Math.sin(T*5))+')';circle(d.x,d.y+bob,18);ctx.fill();
+      rr(d.x-10,d.y-8+bob,20,16,3,'#f4f4f4','#9aa');ctx.fillStyle='#d62828';ctx.fillRect(d.x-2.5,d.y-6+bob,5,12);ctx.fillRect(d.x-6,d.y-2.5+bob,12,5);
+    }
+  }
+  // Boss 範圍技能預警
+  for(const z of zones){
+    if(z.fired){
+      if(z.kind==='beam'&&z.dmg>0){ctx.save();ctx.translate(z.x,z.y);ctx.rotate(z.ang);ctx.fillStyle='rgba(255,255,255,'+(.8*(1-z.ft/.3))+')';ctx.fillRect(0,-z.w/2,z.len,z.w);ctx.restore();}
+      continue;
+    }
+    const k=clamp(z.t/z.delay,0,1);
+    if(z.kind==='circle'){
+      ctx.fillStyle='rgba('+z.c+','+(.10+.2*k)+')';circle(z.x,z.y,z.r);ctx.fill();
+      ctx.save();circle(z.x,z.y,z.r);ctx.clip();ctx.strokeStyle='rgba('+z.c+','+(.14+.12*k)+')';ctx.lineWidth=3;ctx.beginPath();
+      for(let o=-z.r*2+(T*30%14);o<z.r*2;o+=14){ctx.moveTo(z.x-z.r+o,z.y+z.r);ctx.lineTo(z.x+z.r+o,z.y-z.r);}ctx.stroke();ctx.restore();
+      ctx.strokeStyle='rgba('+z.c+',.9)';ctx.lineWidth=2;circle(z.x,z.y,z.r);ctx.stroke();
+      ctx.fillStyle='rgba('+z.c+',.45)';circle(z.x,z.y,z.r*k);ctx.fill();
+    }else{
+      ctx.save();ctx.translate(z.x,z.y);ctx.rotate(z.ang);
+      ctx.fillStyle='rgba('+z.c+','+(.08+.2*k)+')';ctx.fillRect(0,-z.w/2,z.len,z.w);
+      ctx.save();ctx.beginPath();ctx.rect(0,-z.w/2,z.len,z.w);ctx.clip();ctx.strokeStyle='rgba('+z.c+','+(.14+.12*k)+')';ctx.lineWidth=3;ctx.beginPath();
+      for(let o=-z.w+(T*30%14);o<z.len;o+=14){ctx.moveTo(o,z.w/2);ctx.lineTo(o+z.w,-z.w/2);}ctx.stroke();ctx.restore();
+      ctx.strokeStyle='rgba('+z.c+',.8)';ctx.lineWidth=1.5;ctx.strokeRect(0,-z.w/2,z.len,z.w);
+      ctx.fillStyle='rgba('+z.c+',.4)';ctx.fillRect(0,-z.w/2,z.len*k,z.w);ctx.restore();
+    }
+  }
+  // 敵人
+  for(const e of enemies){
+    drawEnemy(e);
+    if(e.burn>0){ctx.fillStyle='rgba(255,120,30,.16)';circle(e.x,e.y,e.r*1.25);ctx.fill();}
+    if(e.stun>0){
+      ctx.strokeStyle='rgba(255,255,190,'+(.5+.4*Math.sin(T*30))+')';ctx.lineWidth=2;circle(e.x,e.y,e.r+4);ctx.stroke();
+      for(let k=0;k<3;k++){const aa=T*5+k*2.09;ctx.fillStyle='#fff3a0';circle(e.x+Math.cos(aa)*(e.r+8),e.y-e.r-4+Math.sin(aa)*4,2.5);ctx.fill();}
+    }
+    if(e.slow>0){
+      ctx.fillStyle='rgba(150,225,255,.22)';circle(e.x,e.y,e.r+2);ctx.fill();
+      ctx.strokeStyle='rgba(190,240,255,.9)';ctx.lineWidth=2;circle(e.x,e.y,e.r+2);ctx.stroke();
+      for(let k=0;k<6;k++){const a=k*1.047+.3,cx=e.x+Math.cos(a)*(e.r+3),cy=e.y+Math.sin(a)*(e.r+3);poly([cx+Math.cos(a)*6,cy+Math.sin(a)*6,cx+Math.cos(a+1.9)*2.5,cy+Math.sin(a+1.9)*2.5,cx+Math.cos(a-1.9)*2.5,cy+Math.sin(a-1.9)*2.5],'rgba(210,245,255,.85)');}
+    }
+    if(e.burn>0){for(let k=0;k<3;k++){const ph=(T*3+k*.37)%1;ctx.fillStyle='rgba(255,'+Math.round(170-ph*110)+',40,'+(1-ph)+')';circle(e.x+(k-1)*e.r*.5,e.y-e.r*.3-ph*e.r*.9,e.r*.22*(1-ph*.5));ctx.fill();}}
+    if(e.hp<e.max){
+      const bw=e.r*(e.t==='boss'?2.2:1.7),bh=e.t==='boss'?5:3,k=clamp(e.hp/e.max,0,1),by=e.y+e.r+5;
+      ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(e.x-bw/2-1,by-1,bw+2,bh+2);
+      ctx.fillStyle=e.t==='boss'?'#e0594a':(k>.5?'#6fd36f':(k>.25?'#e0c14a':'#e0594a'));ctx.fillRect(e.x-bw/2,by,bw*k,bh);
+    }
+  }
+  // Boss 投射物
+  ctx.globalCompositeOperation='lighter';
+  for(const q of eproj){
+    ctx.fillStyle='rgba('+q.c+',.28)';circle(q.x,q.y,q.r+7);ctx.fill();
+    ctx.fillStyle='rgba('+q.c+',.4)';circle(q.x-(q.vx||0)*.02,q.y-(q.vy||0)*.02,q.r+2);ctx.fill();
+  }
+  ctx.globalCompositeOperation='source-over';
+  for(const q of eproj){ctx.fillStyle='rgb('+q.c+')';circle(q.x,q.y,q.r);ctx.fill();ctx.fillStyle='#fff';circle(q.x,q.y,q.r*.4);ctx.fill();}
+  // 自動對焦框
+  if(target){
+    const e=target.e,s=e.r+6+Math.sin(T*8)*1.5;
+    ctx.setLineDash([3,7]);ctx.strokeStyle='rgba(94,224,107,.22)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(P.x,P.y);ctx.lineTo(e.x,e.y);ctx.stroke();ctx.setLineDash([]);
+    ctx.strokeStyle='#5ee06b';ctx.lineWidth=2;
+    for(const [sx,sy] of [[-1,-1],[1,-1],[-1,1],[1,1]]){
+      ctx.beginPath();ctx.moveTo(e.x+sx*s,e.y+sy*(s-7));ctx.lineTo(e.x+sx*s,e.y+sy*s);ctx.lineTo(e.x+sx*(s-7),e.y+sy*s);ctx.stroke();
+    }
+    ctx.fillStyle='rgba(94,224,107,.9)';circle(e.x,e.y,2);ctx.fill();
+  }
+  // 閃光彈
+  for(const n of nades){
+    ctx.save();ctx.translate(n.x,n.y);ctx.rotate(n.t*14);
+    rr(-5,-4,10,13,2,'#e8e6df','#888');rr(-7,-10,14,7,2,'#222','#666');ctx.fillStyle='#fff7b0';ctx.fillRect(-5,-9,10,2.5);ctx.fillStyle='#d62828';circle(0,6,1.6);ctx.fill();
+    ctx.restore();
+    ctx.strokeStyle='rgba(255,255,255,.15)';ctx.lineWidth=1;circle(n.tx,n.ty,n.fl.radius);ctx.stroke();
+    ctx.setLineDash([4,6]);ctx.strokeStyle='rgba(255,255,255,.35)';circle(n.tx,n.ty,6);ctx.stroke();ctx.setLineDash([]);
+  }
+  // 子彈
+  ctx.lineCap='round';ctx.globalCompositeOperation='lighter';
+  for(const b of bullets){
+    const tl=b.splash?.05:(b.size>3?.03:.018);
+    ctx.strokeStyle=b.col;ctx.globalAlpha=.24;ctx.lineWidth=b.size*3.4;ctx.beginPath();ctx.moveTo(b.x-b.vx*tl*1.8,b.y-b.vy*tl*1.8);ctx.lineTo(b.x,b.y);ctx.stroke();
+  }
+  ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';
+  for(const b of bullets){
+    if(b.splash){
+      ctx.save();ctx.translate(b.x,b.y);ctx.rotate(Math.atan2(b.vy,b.vx));
+      ctx.fillStyle='rgba(255,170,60,'+(.7+.3*Math.sin(T*60))+')';ctx.beginPath();ctx.moveTo(-6,0);ctx.lineTo(-13-rnd(0,5),-2.5);ctx.lineTo(-13-rnd(0,5),2.5);ctx.fill();
+      poly([-7,-2.5,-11,-5.5,-4,-2.5],'#888');poly([-7,2.5,-11,5.5,-4,2.5],'#888');
+      rr(-7,-2.5,13,5,2,'#e9e9ef','#777');poly([6,-2.5,11,0,6,2.5],b.col||'#d33');
+      ctx.restore();
+    }else{
+      const tl=b.size>3?.03:.018;
+      ctx.strokeStyle=b.col;ctx.lineWidth=b.size;ctx.beginPath();ctx.moveTo(b.x-b.vx*tl,b.y-b.vy*tl);ctx.lineTo(b.x,b.y);ctx.stroke();
+      ctx.strokeStyle='#fff';ctx.lineWidth=b.size*.45;ctx.beginPath();ctx.moveTo(b.x-b.vx*tl*.5,b.y-b.vy*tl*.5);ctx.lineTo(b.x,b.y);ctx.stroke();
+    }
+  }
+  for(const a of arcs){
+    const al=1-a.t/.18,mx=(a.x1+a.x2)/2+rnd(-8,8),my=(a.y1+a.y2)/2+rnd(-8,8);
+    ctx.globalCompositeOperation='lighter';ctx.strokeStyle='rgba(255,230,90,'+(al*.4)+')';ctx.lineWidth=7;ctx.beginPath();ctx.moveTo(a.x1,a.y1);ctx.lineTo(mx,my);ctx.lineTo(a.x2,a.y2);ctx.stroke();
+    ctx.globalCompositeOperation='source-over';ctx.strokeStyle='rgba(255,250,170,'+al+')';ctx.lineWidth=2.2;ctx.beginPath();ctx.moveTo(a.x1,a.y1);ctx.lineTo(mx,my);ctx.lineTo(a.x2,a.y2);ctx.stroke();
+  }
+  // 玩家
+  const blink=P.iframes>0&&Math.floor(T*20)%2===0;
+  if(!blink){drawPlayerBody();drawCamera(P.x,P.y,P.ang,ci,lens.type,lens.name,lens.id,curFilt().col);}
+  if(S.shield>0){
+    ctx.fillStyle='rgba(120,200,255,'+(.06+P.shHit*.5)+')';circle(P.x,P.y,23);ctx.fill();
+    ctx.strokeStyle='rgba(140,210,255,'+(.4+P.shHit*2)+')';ctx.lineWidth=2+P.shHit*8;circle(P.x,P.y,23+Math.sin(T*4)*.8);ctx.stroke();
+  }
+  if(P.muzzle>0)drawMuzzle(ci);
+  // 粒子
+  drawParts();
+  drawSnaps();
+  // 閃光爆炸 / 衝擊波
+  for(const f of fx){
+    const k=f.t/f.dur;
+    if(f.iris){drawIris(f);continue;}
+    if(f.ring){ctx.strokeStyle='rgba('+f.c+','+(1-k)+')';ctx.lineWidth=1+5*(1-k);circle(f.x,f.y,f.r*(.25+.75*Math.min(1,k*1.6)));ctx.stroke();continue;}
+    const r=f.r*(.3+.7*Math.min(1,k*2.2));
+    const g=ctx.createRadialGradient(f.x,f.y,0,f.x,f.y,r);
+    g.addColorStop(0,'rgba(255,255,255,'+(1-k)+')');g.addColorStop(.6,'rgba('+(f.c||'255,250,200')+','+(.7*(1-k))+')');g.addColorStop(1,'rgba('+(f.c||'255,240,150')+',0)');
+    ctx.fillStyle=g;circle(f.x,f.y,r);ctx.fill();
+    if(f.rays){
+      ctx.save();ctx.globalCompositeOperation='lighter';ctx.strokeStyle='rgba(255,250,200,'+(.8*(1-k))+')';ctx.lineWidth=3;ctx.beginPath();
+      for(let i=0;i<16;i++){const a=i*Math.PI/8+f.x*.01,l=r*(.7+(i%2)*.4);ctx.moveTo(f.x+Math.cos(a)*r*.3,f.y+Math.sin(a)*r*.3);ctx.lineTo(f.x+Math.cos(a)*l,f.y+Math.sin(a)*l);}
+      ctx.stroke();ctx.restore();
+    }
+  }
+  // 飄字
+  ctx.font='bold 13px '+FONT;ctx.textAlign='center';
+  ctx.lineJoin='round';
+  for(const f of floats){
+    ctx.globalAlpha=Math.max(0,1-f.t/(f.life||.7));
+    const sz=(f.big?17:13)*(1+.45*Math.max(0,1-f.t*9));
+    ctx.font='bold '+sz.toFixed(1)+'px '+FONT;ctx.lineWidth=3;ctx.strokeStyle='rgba(0,0,0,.65)';ctx.strokeText(f.txt,f.x,f.y);
+    ctx.fillStyle=f.col;ctx.fillText(f.txt,f.x,f.y);
+  }
+  ctx.globalAlpha=1;
+  ctx.restore();
+  if(S.hp/maxHP()<.3){const k=.2+.12*Math.sin(T*6),g=ctx.createRadialGradient(W/2,H/2,H*.3,W/2,H/2,W*.62);g.addColorStop(0,'rgba(200,0,0,0)');g.addColorStop(1,'rgba(200,0,0,'+k+')');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);}
+  // 全螢幕閃光 / 受傷
+  if(screenFlash>0){ctx.fillStyle='rgba(255,255,255,'+Math.min(.9,screenFlash)+')';ctx.fillRect(0,0,W,H);}
+  if(hurtT>0){ctx.fillStyle='rgba(220,40,40,'+(hurtT*1.2)+')';ctx.fillRect(0,0,W,H);}
+  drawHUD(cam,card,fl);
+  if(banner>0){
+    ctx.globalAlpha=Math.min(1,banner*1.5);ctx.fillStyle='#fff';ctx.font='bold 46px '+FONT;ctx.textAlign='center';
+    ctx.fillText('WAVE '+S.wave+(S.wave%5===0?'  ‧ BOSS':''),W/2,H/2-60);
+    ctx.font='bold 22px '+FONT;ctx.fillStyle='#f0c24a';ctx.fillText(themeLabel(S.wave)+(S.wave%5===0?'：'+THEMES[themeIdx(S.wave)].names.boss:''),W/2,H/2-26);
+    if(S.wave%5===0){ctx.font='15px '+FONT;ctx.fillStyle='#ffd0c0';ctx.fillText('技能：'+THEMES[themeIdx(S.wave)].skills.map(k=>k.name).join('、'),W/2,H/2+4);}
+    ctx.globalAlpha=1;
+  }
+}
+function drawHUD(cam,card,fl){
+  ctx.textAlign='left';
+  const bs=enemies.filter(e=>e.t==='boss');
+  if(bs.length){
+    const tot=bs.reduce((t,e)=>t+Math.max(0,e.hp),0),mx=bs.reduce((t,e)=>t+e.max,0);
+    rr(W/2-170,12,340,14,6,'rgba(8,10,14,.75)','rgba(255,255,255,.35)');
+    {const gk=ctx.createLinearGradient(0,12,0,26);gk.addColorStop(0,'#e8584a');gk.addColorStop(1,'#a02a20');ctx.fillStyle=gk;ctx.beginPath();if(ctx.roundRect)ctx.roundRect(W/2-170,12,Math.max(0,340*clamp(tot/mx,0,1)),14,6);else ctx.rect(W/2-170,12,340*clamp(tot/mx,0,1),14);ctx.fill();}
+    ctx.fillStyle='#fff';ctx.font='bold 12px '+FONT;ctx.textAlign='center';ctx.fillText(bs[0].name+(bs.length>1?' ×'+bs.length:''),W/2,40);ctx.textAlign='left';
+  }
+  // 生命
+  rr(14,14,220,16,6,'rgba(8,10,14,.75)','rgba(255,255,255,.3)');
+  {const k=clamp(S.hp/maxHP(),0,1),lo=k<=.3,gr=ctx.createLinearGradient(0,14,0,30);gr.addColorStop(0,lo?'#ff6a5a':'#f0766a');gr.addColorStop(1,lo?'#c01010':'#b83a2e');
+   ctx.fillStyle=gr;ctx.beginPath();if(ctx.roundRect)ctx.roundRect(14,14,Math.max(0,220*k),16,6);else ctx.rect(14,14,220*k,16);ctx.fill();
+   ctx.fillStyle='rgba(255,255,255,.18)';ctx.fillRect(17,16,Math.max(0,220*k-6),4);}
+  ctx.fillStyle='#fff';ctx.font='bold 12px '+FONT;ctx.fillText('HP '+Math.ceil(S.hp)+' / '+maxHP(),20,27);
+  if(shieldMax()>0){ctx.fillStyle='#000a';ctx.fillRect(14,32,220,6);ctx.fillStyle='#6cc4ff';ctx.fillRect(14,32,220*clamp(S.shield/shieldMax(),0,1),6);}
+  if(battInfo().n>0){ctx.fillStyle=S.revives>0?'#9be37a':'#666';ctx.font='bold 12px '+FONT;ctx.fillText('備用電池 ×'+S.revives,240,27);}
+  ctx.font='bold 15px '+FONT;ctx.fillStyle='#f0c24a';ctx.fillText('● '+S.gold,14,52);
+  ctx.fillStyle='#d6d3c8';ctx.font='13px '+FONT;
+  ctx.fillText('第 '+S.wave+(S.endless?'':' / '+TOTAL_WAVES)+' 波・'+themeLabel(S.wave)+'　剩餘敵人 '+(enemies.length+spawnQ.length),14,72);
+  ctx.fillText(curLens().name+'（'+curLens().kind+(cropped(cam,curLens())?'・裁切':'')+'）'+(curFilt().id!=='uv'?' ＋ '+curFilt().short:''),14,90);
+  // 左下：相機與記憶卡
+  rr(14,H-92,250,78,8,'rgba(10,12,16,.78)','rgba(255,255,255,.14)');
+  ctx.fillStyle='#d6d3c8';ctx.font='13px '+FONT;ctx.fillText(cam.name,24,H-72);
+  ctx.fillStyle='#8a877c';ctx.fillText(card.name+'（'+CARDTYPES[card.type].label+'）',24,H-54);
+  ctx.fillStyle=getMag()<=Math.max(3,card.cap*.15)?'#ff6b5a':'#fff';ctx.font='bold 26px '+FONT;
+  ctx.fillText(String(getMag()),24,H-24);
+  const mw=ctx.measureText(String(getMag())).width;
+  ctx.fillStyle='#8a877c';ctx.font='15px '+FONT;ctx.fillText(' / '+S.reserve,24+mw,H-24);
+  if(P.reloading){
+    const k=1-P.reloadT/P.reloadMax;
+    ctx.fillStyle='#333';ctx.fillRect(140,H-38,114,8);ctx.fillStyle='#e0a526';ctx.fillRect(140,H-38,114*k,8);
+    ctx.fillStyle='#e0a526';ctx.font='11px '+FONT;ctx.fillText('換卡中…',140,H-44);
+  }else if(getMag()===0&&S.reserve===0){
+    ctx.fillStyle='#ff6b5a';ctx.font='bold 13px '+FONT;ctx.fillText('彈盡！找藍色記憶卡',130,H-24);
+  }else if(getMag()===0){
+    ctx.fillStyle='#ff6b5a';ctx.font='bold 13px '+FONT;ctx.fillText('按 R 換卡',160,H-24);
+  }
+  // 右下：閃光燈
+  rr(W-214,H-62,200,48,8,'rgba(10,12,16,.78)','rgba(255,255,255,.14)');
+  ctx.fillStyle='#d6d3c8';ctx.font='12px '+FONT;ctx.textAlign='right';
+  ctx.fillText(fl.name,W-24,H-44);
+  ctx.fillStyle=S.grenades>0?'#fff3a0':'#666';ctx.font='bold 18px '+FONT;
+  ctx.fillText('⚡ x '+S.grenades+(P.flashCd>0?'  …':''),W-24,H-22);
+  ctx.textAlign='left';
+}
+
+/* ---------- 商店 ---------- */
+let tab='cam',onlyCompat=true;
+const TABS=[['album','圖鑑'],['cam','機身'],['card','記憶卡'],['lens','鏡頭（彈種）'],['filt','濾鏡（效果）'],['acc','配件（生存）'],['fl','閃光燈'],['sup','補給']];
+function showShop(m){
+  mode='shop';joy.on=false;
+  $('gameWrap').classList.add('hidden');$('shop').classList.remove('hidden');
+  msg(m||'');renderShop();syncTouch();window.scrollTo(0,0);
+}
+function msg(t){$('msg').textContent=t||'';}
+/* ---------- 商店圖示 v2（參考實機照片重新繪製的原創向量圖；不含任何商標字樣） ---------- */
+let _gid=0;const nid=()=>'q'+(++_gid);
+const svgWrap=(w,h,body)=>'<svg viewBox="0 0 '+w+' '+h+'" xmlns="http://www.w3.org/2000/svg">'+body+'</svg>';
+const isLLens=l=>/\dL\b/.test(l.name||'');
+const isWhiteLens=l=>l.type==='tele'||l.type==='rkt';
+function shade(hex,f){const n=parseInt(hex.slice(1),16);let r=n>>16,g=n>>8&255,b=n&255;
+  const m=f<0?0:255,p=Math.abs(f);r=Math.round(r+(m-r)*p);g=Math.round(g+(m-g)*p);b=Math.round(b+(m-b)*p);
+  return '#'+((1<<24)+(r<<16)+(g<<8)+b).toString(16).slice(1);}
+/* 垂直圓柱漸層（側視鏡筒用） */
+function cylG(id,c){return '<linearGradient id="'+id+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="'+shade(c,-.25)+'"/><stop offset=".18" stop-color="'+shade(c,.28)+'"/><stop offset=".45" stop-color="'+c+'"/><stop offset="1" stop-color="'+shade(c,-.55)+'"/></linearGradient>';}
+const DEFS=(x)=>'<defs>'+x+'</defs>';
+
+/* ===== 機身（正面，卸下鏡頭，可見卡口） ===== */
+const CAMSPEC=[
+ {fam:'dslr',w:92,h:46,col:'#26272b',hump:1,flash:1,mt:'EF',grip:'soft',dial:1,badge:'EOS 500D',badgeSide:'r'},
+ {fam:'dslr',w:98,h:48,col:'#232428',hump:1,flash:1,mt:'EF',grip:'soft',dial:2,badge:'EOS 60D',badgeSide:'r'},
+ {fam:'dslr',w:104,h:50,col:'#1f2024',hump:0,flash:0,mt:'EF',grip:'tex',dial:2,badge:'EOS 5D',badgeSide:'r',btn:1,tall:1},
+ {fam:'pro',w:94,h:76,col:'#1b1c20',hump:0,flash:0,mt:'EF',grip:'tex',dial:0,badge:'EOS-1D X',badgeSide:'r',btn:1,ports:1},
+ {fam:'mirr',w:100,h:44,col:'#303239',hump:1,mt:'RF',grip:'tex',dial:1,badge:'EOS R8',badgeSide:'r'},
+ {fam:'mirr',w:102,h:48,col:'#232429',hump:1,mt:'RF',grip:'tex',dial:2,badge:'EOS R6 Mark III',badgeSide:'r',ports:1},
+ {fam:'mirr',w:104,h:50,col:'#202126',hump:1,mt:'RF',grip:'tex',dial:2,badge:'EOS R5 Mark II',badgeSide:'r',lcd:1,ports:1},
+ {fam:'pro',w:92,h:78,col:'#1a1b20',hump:1,mt:'RF',grip:'tex',dial:0,badge:'EOS R1',badgeSide:'r',lcd:1,ports:1,cover:1,btn:1},
+];
+function icoCamera(c){
+  const i=CAMERAS.indexOf(c),s=CAMSPEC[i]||CAMSPEC[0];
+  const g1=nid(),g2=nid(),g3=nid(),g4=nid(),pt=nid();
+  const W=120,H=s.fam==='pro'?108:84,x0=(W-s.w)/2,x1=x0+s.w;
+  const yB=s.fam==='pro'?100:76,yT=yB-s.h;               // 機身上下緣
+  const mcx=60+(s.fam==='pro'?-2:0),mcy=yT+s.h*(s.fam==='pro'?.46:.52),mr=s.fam==='mirr'?19:21;
+  const light=shade(s.col,.16),dark=shade(s.col,-.45);
+  let b=DEFS(
+    '<linearGradient id="'+g1+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="'+shade(s.col,.28)+'"/><stop offset=".25" stop-color="'+s.col+'"/><stop offset="1" stop-color="'+dark+'"/></linearGradient>'+
+    '<linearGradient id="'+g2+'" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f3f4f7"/><stop offset=".45" stop-color="#9ca1ad"/><stop offset=".6" stop-color="#d9dce3"/><stop offset="1" stop-color="#6a6f7c"/></linearGradient>'+
+    '<radialGradient id="'+g3+'" cx=".5" cy=".4" r=".7"><stop offset="0" stop-color="#2a2d34"/><stop offset="1" stop-color="#050506"/></radialGradient>'+
+    '<linearGradient id="'+g4+'" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2f6f8f"/><stop offset=".5" stop-color="#1a3d55"/><stop offset="1" stop-color="#2b1f4a"/></linearGradient>'+
+    '<pattern id="'+pt+'" width="3" height="3" patternUnits="userSpaceOnUse"><rect width="3" height="3" fill="none"/><circle cx="1.5" cy="1.5" r=".55" fill="#fff" opacity=".13"/></pattern>');
+  b+='<ellipse cx="60" cy="'+(yB+4)+'" rx="'+(s.w/2+2)+'" ry="3" fill="#000" opacity=".35"/>';
+  // 頂部：五稜鏡 / EVF 凸起
+  if(s.fam==='dslr'||s.fam==='pro'&&s.mt==='EF'){
+    const pw=s.fam==='pro'?44:(s.tall?46:40),ph=s.fam==='pro'?15:(s.tall?17:15),px=mcx-pw/2+(s.fam==='pro'?0:2);
+    b+='<path d="M'+(px-6)+' '+(yT+2)+'Q'+(px-3)+' '+(yT-ph)+' '+(px+8)+' '+(yT-ph)+'H'+(px+pw-8)+'Q'+(px+pw+3)+' '+(yT-ph)+' '+(px+pw+6)+' '+(yT+2)+'Z" fill="url(#'+g1+')" stroke="'+dark+'"/>';
+    b+='<path d="M'+(px+2)+' '+(yT-ph+3)+'H'+(px+pw-2)+'" stroke="#fff" opacity=".18" stroke-width="1.4"/>';
+    b+='<rect x="'+(mcx-8)+'" y="'+(yT-ph-3)+'" width="16" height="3.6" rx=".8" fill="url(#'+g2+')"/><rect x="'+(mcx-1)+'" y="'+(yT-ph-2.4)+'" width="2" height="2.2" fill="#2a2d34"/>';
+    if(s.flash)b+='<path d="M'+(px+4)+' '+(yT-2)+'H'+(px+pw-4)+'L'+(px+pw-8)+' '+(yT-ph+5)+'H'+(px+8)+'Z" fill="'+light+'" opacity=".55"/><rect x="'+(mcx-6)+'" y="'+(yT-ph+6)+'" width="14" height="3" rx="1" fill="#fff4c2" opacity=".35"/>';
+    if(s.fam==='pro')b+='<rect x="'+(px+pw+1)+'" y="'+(yT-6)+'" width="8" height="5" rx="1.5" fill="'+light+'"/><circle cx="'+(px+pw+13)+'" cy="'+(yT-2)+'" r="2" fill="#c1121f"/>';
+  }else{
+    const pw=s.fam==='pro'?38:34,ph=s.fam==='pro'?11:9,px=mcx-pw/2+2;
+    b+='<path d="M'+(px-4)+' '+(yT+2)+'Q'+(px-2)+' '+(yT-ph)+' '+(px+6)+' '+(yT-ph)+'H'+(px+pw-6)+'Q'+(px+pw+2)+' '+(yT-ph)+' '+(px+pw+4)+' '+(yT+2)+'Z" fill="url(#'+g1+')" stroke="'+dark+'"/>';
+    if(s.cover)b+='<path d="M'+(px+pw-8)+' '+(yT-ph)+'l12 -2v-4h-16l-1 6Z" fill="#33363f" stroke="#585d6b" stroke-width=".6"/><rect x="'+(px+pw-4)+'" y="'+(yT-ph-5)+'" width="6" height="2" fill="#585d6b"/>';
+    else b+='<rect x="'+(mcx-8+2)+'" y="'+(yT-ph-3)+'" width="16" height="3.6" rx=".8" fill="url(#'+g2+')"/><rect x="'+(mcx+1)+'" y="'+(yT-ph-2.4)+'" width="2" height="2.2" fill="#2a2d34"/>';
+  }
+  // 機身主體
+  b+='<rect x="'+x0+'" y="'+yT+'" width="'+s.w+'" height="'+s.h+'" rx="'+(s.fam==='pro'?9:7)+'" fill="url(#'+g1+')" stroke="'+dark+'"/>';
+  b+='<rect x="'+(x0+4)+'" y="'+(yT+1.5)+'" width="'+(s.w-8)+'" height="2.4" rx="1.2" fill="#fff" opacity=".13"/>';
+  // 頂板上的轉盤 / 按鈕（正面可見的凸起）
+  if(s.dial>=1)b+='<rect x="'+(x0+s.w-23)+'" y="'+(yT-4)+'" width="14" height="5" rx="1.5" fill="'+light+'" stroke="'+dark+'" stroke-width=".6"/>'+'<g stroke="#000" opacity=".4">'+[0,1,2,3,4].map(k=>'<line x1="'+(x0+s.w-21+k*2.6)+'" x2="'+(x0+s.w-21+k*2.6)+'" y1="'+(yT-3)+'" y2="'+yT+'"/>').join('')+'</g>';
+  if(s.dial===2)b+='<rect x="'+(x0+5)+'" y="'+(yT-3)+'" width="16" height="4" rx="1.5" fill="'+light+'" stroke="'+dark+'" stroke-width=".6"/>';
+  if(s.lcd)b+='<rect x="'+(x0+s.w-40)+'" y="'+(yT-8)+'" width="16" height="6" rx="1" fill="#6c8a96" stroke="#1b1c20"/><rect x="'+(x0+s.w-38)+'" y="'+(yT-7)+'" width="12" height="2" fill="#a7c4cf" opacity=".6"/>';
+  // 握把（觀者左側，凸出 + 紋理）
+  const gw=s.fam==='pro'?24:21;
+  b+='<path d="M'+(x0-3)+' '+(yT+8)+'Q'+(x0-4)+' '+(yT+4)+' '+(x0+2)+' '+(yT+4)+'H'+(x0+gw)+'V'+yB+'H'+(x0-1)+'Q'+(x0-4)+' '+yB+' '+(x0-3)+' '+(yB-6)+'Z" fill="'+shade(s.col,-.18)+'" stroke="'+dark+'"/>';
+  b+='<path d="M'+(x0-3)+' '+(yT+8)+'Q'+(x0-4)+' '+(yT+4)+' '+(x0+2)+' '+(yT+4)+'H'+(x0+gw)+'V'+yB+'H'+(x0-1)+'Q'+(x0-4)+' '+yB+' '+(x0-3)+' '+(yB-6)+'Z" fill="url(#'+pt+')"/>';
+  b+='<circle cx="'+(x0+7)+'" cy="'+(yT+11)+'" r="3.2" fill="'+(s.mt==='RF'?'#b9bdc8':'#3a3c44')+'" stroke="#000" stroke-width=".6"/><circle cx="'+(x0+7)+'" cy="'+(yT+11)+'" r="1.4" fill="#d73a49" opacity="'+(s.mt==='RF'?0:.9)+'"/>';   // 自拍燈 / 景深預視
+  b+='<rect x="'+(x0+gw-2.5)+'" y="'+(yT+10)+'" width="2" height="'+(s.h-20)+'" rx="1" fill="#c1121f" opacity=".95"/>';   // 握把紅線
+  // 右肩：型號銘牌（只用型號文字，無品牌商標）
+  const bx=x1-(s.fam==='pro'?28:26);
+  b+='<rect x="'+bx+'" y="'+(yT+7)+'" width="'+(x1-bx-4)+'" height="9" rx="1.8" fill="#0b0b0d" stroke="#4a4e5a" stroke-width=".6"/>'+
+     '<text x="'+(bx+(x1-bx-4)/2)+'" y="'+(yT+13.6)+'" text-anchor="middle" font-size="'+(s.badge.length>9?3.6:(s.badge.length>7?4.4:5.2))+'" font-weight="800" fill="#d8dbe3" font-family="sans-serif">'+s.badge+'</text>';
+  // 右側按鈕（景深預視 / AF-ON 等）與側蓋
+  if(s.btn)b+='<circle cx="'+(x1-8)+'" cy="'+(mcy+2)+'" r="2.6" fill="#3a3c44" stroke="#000" stroke-width=".5"/><circle cx="'+(x1-8)+'" cy="'+(mcy+10)+'" r="2.2" fill="#3a3c44" stroke="#000" stroke-width=".5"/>';
+  if(s.ports)for(let k=0;k<2;k++)b+='<rect x="'+(x1-12)+'" y="'+(yT+22+k*13)+'" width="9" height="10" rx="2" fill="'+shade(s.col,.08)+'" stroke="'+dark+'" stroke-width=".7"/><line x1="'+(x1-8.5)+'" x2="'+(x1-5.5)+'" y1="'+(yT+27+k*13)+'" y2="'+(yT+27+k*13)+'" stroke="#000" opacity=".5"/>';
+  // 直拍握把縫線（1DX3 / R1）
+  if(s.fam==='pro'){b+='<line x1="'+(x0+3)+'" x2="'+(x1-3)+'" y1="'+(yT+s.h*.72)+'" y2="'+(yT+s.h*.72)+'" stroke="#000" opacity=".5" stroke-width="1.4"/><line x1="'+(x0+3)+'" x2="'+(x1-3)+'" y1="'+(yT+s.h*.72+1.6)+'" y2="'+(yT+s.h*.72+1.6)+'" stroke="#fff" opacity=".08"/><rect x="'+(x0+10)+'" y="'+(yB-9)+'" width="16" height="4.5" rx="1" fill="#000" opacity=".3"/>';b+='<rect x="'+(x1-24)+'" y="'+(yB-10)+'" width="12" height="6" rx="1.5" fill="#33363f" stroke="#000" stroke-width=".5"/><circle cx="'+(x1-8)+'" cy="'+(yB-7)+'" r="2" fill="#e0a526" opacity="'+(i===7?1:0)+'"/>';}
+  // 卡口
+  b+='<circle cx="'+mcx+'" cy="'+mcy+'" r="'+(mr+2.2)+'" fill="#000" opacity=".35"/>';
+  b+='<circle cx="'+mcx+'" cy="'+mcy+'" r="'+mr+'" fill="url(#'+g2+')" stroke="#4b505c" stroke-width=".8"/>';
+  b+='<circle cx="'+mcx+'" cy="'+mcy+'" r="'+(mr-3.4)+'" fill="url(#'+g3+')" stroke="#2b2e35" stroke-width="1"/>';
+  for(let k=0;k<3;k++){const a=(k*120-90+(s.mt==='RF'?0:20))*Math.PI/180;b+='<circle cx="'+(mcx+Math.cos(a)*(mr-1.7)).toFixed(1)+'" cy="'+(mcy+Math.sin(a)*(mr-1.7)).toFixed(1)+'" r="1.15" fill="#555a66"/>';}   // 螺絲
+  if(s.mt==='EF'){   // 反光鏡箱 + 反光板
+    b+='<path d="M'+(mcx-12)+' '+(mcy-6)+'L'+(mcx+12)+' '+(mcy-9)+'L'+(mcx+12)+' '+(mcy-1)+'L'+(mcx-12)+' '+(mcy+2)+'Z" fill="#6c717d" opacity=".75"/><path d="M'+(mcx-12)+' '+(mcy+2)+'L'+(mcx+12)+' '+(mcy-1)+'V'+(mcy+8)+'H'+(mcx-12)+'Z" fill="#0b0c0f"/>';
+    b+='<path d="M'+(mcx-9)+' '+(mcy-4)+'L'+(mcx+6)+' '+(mcy-6)+'" stroke="#fff" opacity=".35" stroke-width="1"/>';
+  }else{            // 感光元件
+    b+='<rect x="'+(mcx-12)+'" y="'+(mcy-8)+'" width="24" height="16" rx="1.6" fill="url(#'+g4+')" stroke="#0a0a0c"/><path d="M'+(mcx-10)+' '+(mcy+6)+'L'+(mcx-1)+' '+(mcy-6)+'H'+(mcx+4)+'L'+(mcx-5)+' '+(mcy+6)+'Z" fill="#fff" opacity=".18"/>';
+  }
+  for(let k=0;k<(s.mt==='RF'?12:5);k++){const a=(s.mt==='RF'?(40+k*8.5):(62+k*14))*Math.PI/180,rr=mr-5.3;b+='<rect x="'+(mcx+Math.cos(a)*rr-.7).toFixed(1)+'" y="'+(mcy+Math.sin(a)*rr-.7).toFixed(1)+'" width="1.4" height="1.4" fill="#e0b94a"/>';}   // 金色接點
+  b+='<circle cx="'+(mcx-mr*.72)+'" cy="'+(mcy-mr*.72)+'" r="1.8" fill="#e63946"/><circle cx="'+(mcx-mr*.72-.4)+'" cy="'+(mcy-mr*.72-.4)+'" r=".7" fill="#fff" opacity=".7"/>';
+  // 鏡頭鎖定銷與解鎖鈕
+  b+='<circle cx="'+(mcx+mr+4.5)+'" cy="'+(mcy+3)+'" r="3.4" fill="#2d2f36" stroke="#000" stroke-width=".6"/><circle cx="'+(mcx+mr+4.5)+'" cy="'+(mcy+3)+'" r="1.4" fill="#555a66"/>';
+  return svgWrap(W,H,b);
+}
+
+/* ===== 記憶卡 ===== */
+function icoCard(card){
+  const t=card.type,gb=(card.name.match(/(\d+\s?(GB|TB))/)||['',''])[1].replace(' ','');
+  const g=nid();let b='';
+  const gold='<linearGradient id="'+g+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6d77a"/><stop offset="1" stop-color="#b98a22"/></linearGradient>';
+  if(t==='SD'){
+    const big=/128/.test(card.name);
+    b+=DEFS(gold+'<linearGradient id="'+g+'b" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3a3d45"/><stop offset="1" stop-color="#15161a"/></linearGradient>');
+    b+='<path d="M42 55Q42 59 46 59H78Q82 59 82 55V19L72 6H46Q42 6 42 10Z" fill="url(#'+g+'b)" stroke="#6b707c"/>';
+    b+='<path d="M72 6L82 19H75Q72 19 72 16Z" fill="#000" opacity=".25"/>';
+    b+='<rect x="44" y="9" width="20" height="3" rx="1" fill="#000" opacity=".5"/>';            // 防寫入撥片槽
+    b+='<rect x="46" y="14" width="32" height="22" rx="2" fill="#f4f4f6"/><rect x="46" y="14" width="32" height="6" rx="2" fill="'+(big?'#b81d2b':'#1d4f91')+'"/>';
+    b+='<text x="62" y="19" text-anchor="middle" font-size="5" font-weight="800" fill="#fff" font-family="sans-serif">'+(big?'SDXC':'SDHC')+'</text>';
+    b+='<text x="62" y="31" text-anchor="middle" font-size="10" font-weight="800" fill="#1a1d24" font-family="sans-serif">'+gb+'</text>';
+    b+='<text x="64" y="26" font-size="0"></text>';
+    for(let k=0;k<8;k++)b+='<rect x="'+(45.5+k*4.3)+'" y="46" width="3" height="11" fill="url(#'+g+')"/>';
+    b+='<rect x="44" y="40" width="34" height="2.2" fill="#fff" opacity=".1"/>';
+  }else if(t==='CF'){
+    b+=DEFS(gold+'<linearGradient id="'+g+'b" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#d9dce2"/><stop offset=".5" stop-color="#8a8f9c"/><stop offset="1" stop-color="#c8ccd4"/></linearGradient>');
+    b+='<rect x="32" y="8" width="56" height="50" rx="3" fill="#2a2c33" stroke="#7a7f8c"/>';
+    b+='<rect x="32" y="8" width="56" height="9" rx="3" fill="url(#'+g+'b)"/><rect x="34" y="10" width="52" height="2" fill="#fff" opacity=".5"/>';
+    b+='<rect x="37" y="21" width="46" height="21" rx="2" fill="#f2ede0"/><rect x="37" y="21" width="46" height="6" fill="#b01e28"/>';
+    b+='<text x="60" y="26" text-anchor="middle" font-size="5" font-weight="800" fill="#fff" font-family="sans-serif">CompactFlash</text>';
+    b+='<text x="60" y="38" text-anchor="middle" font-size="10" font-weight="800" fill="#1a1d24" font-family="sans-serif">'+gb+'</text>';
+    for(let r=0;r<2;r++)for(let k=0;k<25;k++)b+='<circle cx="'+(35.2+k*2.1)+'" cy="'+(48+r*4.4)+'" r=".72" fill="'+(k%2?'#0b0b0d':'#e0b94a')+'"/>';
+    b+='<rect x="32" y="45" width="3" height="10" fill="#000" opacity=".35"/>';
+  }else{
+    b+=DEFS(gold+'<linearGradient id="'+g+'b" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2d3036"/><stop offset="1" stop-color="#0c0d10"/></linearGradient>');
+    b+='<path d="M46 6H74Q78 6 78 10V52L74 59H48L44 52V10Q44 6 46 6Z" fill="url(#'+g+'b)" stroke="#6b707c"/>';
+    b+='<rect x="44" y="6" width="34" height="8" rx="2" fill="#0e0e11"/><rect x="48" y="8" width="26" height="2" fill="#5aa7ff" opacity=".8"/>';
+    b+='<text x="61" y="26" text-anchor="middle" font-size="5.6" font-weight="800" fill="#5aa7ff" font-family="sans-serif">CFexpress</text><text x="61" y="30.5" text-anchor="middle" font-size="3.6" font-weight="700" fill="#9aa0ae" font-family="sans-serif">TYPE B</text>';
+    b+='<text x="61" y="43" text-anchor="middle" font-size="10" font-weight="800" fill="#fff" font-family="sans-serif">'+gb+'</text>';
+    for(let k=0;k<9;k++)b+='<rect x="'+(48.5+k*2.9)+'" y="50" width="1.8" height="7" fill="url(#'+g+')"/>';
+    b+='<rect x="44" y="48" width="3" height="6" fill="#000" opacity=".5"/><rect x="75" y="48" width="3" height="6" fill="#000" opacity=".5"/>';
+  }
+  return svgWrap(120,64,b);
+}
+
+/* ===== 鏡頭（側視，依真實鏡頭外型分段） ===== */
+const LENSSPEC={
+ efs1855 :{c:'b',s:[[4,17,'p'],[5,19,'sil'],[22,24,'zoom'],[8,22,'p'],[3,23,'f']],sw:1},
+ efs1018 :{c:'b',s:[[5,19,'p'],[10,24,'zoom'],[10,27,'p'],[4,31,'f']],bulb:1},
+ efs55250:{c:'b',s:[[6,19,'p'],[26,24,'zoom'],[8,23,'p'],[12,22,'p'],[3,24,'f']],sw:1},
+ ef50    :{c:'b',s:[[3,19,'p'],[9,24,'foc'],[6,26,'p'],[3,27,'f']]},
+ ef2470  :{c:'b',L:1,s:[[5,22,'p'],[16,28,'zoom'],[10,30,'p'],[8,29,'foc'],[3,31,'f']],hood:'t'},
+ ef50l   :{c:'b',L:1,s:[[4,22,'p'],[8,30,'foc'],[10,35,'p'],[3,37,'f']]},
+ ef1635f4:{c:'b',L:1,s:[[5,22,'p'],[10,27,'zoom'],[10,30,'p'],[3,32,'f']],bulb:1,hood:'p'},
+ ef1635  :{c:'b',L:1,s:[[5,24,'p'],[10,30,'zoom'],[10,33,'p'],[3,36,'f']],bulb:1,hood:'p'},
+ ef100400:{c:'w',L:1,s:[[5,24,'p'],[16,28,'zoom'],[10,27,'foc'],[18,31,'p'],[10,34,'p'],[3,36,'f']],hood:'t'},
+ ef200400:{c:'w',L:1,s:[[5,26,'p'],[14,32,'zoom'],[14,34,'p'],[24,40,'p'],[10,44,'p'],[3,46,'f']],ext:1,hood:'t'},
+ ef400   :{c:'w',L:1,s:[[6,26,'p'],[8,30,'foc'],[18,38,'p'],[24,48,'p'],[12,54,'p'],[3,56,'f']],collar:1,hood:'t'},
+ ef600   :{c:'w',L:1,s:[[6,26,'p'],[8,30,'foc'],[24,38,'p'],[30,48,'p'],[18,56,'p'],[3,58,'f']],collar:1,hood:'t'},
+ rf50    :{c:'b',s:[[3,18,'p'],[8,22,'foc'],[4,24,'p'],[3,25,'f']]},
+ rf2470  :{c:'b',L:1,s:[[4,22,'p'],[14,28,'zoom'],[6,30,'ring'],[10,30,'p'],[3,32,'f']],hood:'t'},
+ rf85    :{c:'b',L:1,s:[[4,24,'p'],[8,34,'foc'],[12,38,'p'],[3,41,'f']]},
+ rf16    :{c:'b',s:[[3,20,'p'],[6,26,'foc'],[3,28,'p'],[3,30,'f']],bulb:1},
+ rf1535  :{c:'b',L:1,s:[[4,24,'p'],[8,28,'zoom'],[6,30,'ring'],[8,34,'p'],[3,37,'f']],bulb:1,hood:'p'},
+ rf100500:{c:'w',L:1,s:[[4,24,'p'],[8,28,'ring'],[18,30,'zoom'],[16,32,'p'],[14,34,'p'],[3,36,'f']],hood:'t',collar:1},
+ rf200800:{c:'w',s:[[5,26,'p'],[22,30,'zoom'],[16,29,'p'],[20,32,'p'],[14,34,'p'],[3,38,'f']],hood:'t',collar:1},
+ rf800   :{c:'w',L:1,s:[[5,26,'p'],[8,30,'foc'],[24,36,'p'],[24,42,'p'],[10,48,'p'],[3,50,'f']],hood:'t',collar:1},
+ rf600   :{c:'w',L:1,s:[[5,26,'p'],[8,30,'foc'],[22,36,'p'],[24,46,'p'],[16,52,'p'],[3,54,'f']],hood:'t',collar:1},
+ rf1200  :{c:'w',L:1,s:[[6,26,'p'],[8,30,'foc'],[26,38,'p'],[28,50,'p'],[24,58,'p'],[3,60,'f']],hood:'t',collar:1},
+};
+function icoLens(l){
+  const sp=LENSSPEC[l.id]||{c:isWhiteLens(l)?'w':'b',s:[[6,24,'p'],[20,28,'zoom'],[10,30,'p'],[3,32,'f']]};
+  const white=sp.c==='w',base=white?'#e9e6dc':'#1c1d21',rib=white?'#2a2b30':'#6a6e7a',cy=31;
+  let tot=0;sp.s.forEach(q=>tot+=q[0]);
+  const sc=Math.min(1,100/(tot+10));
+  const x0=8;let x=x0;
+  const gb=nid(),gw=nid(),gk=nid(),gs=nid(),gg=nid();
+  let b=DEFS(cylG(gb,'#1c1d21')+cylG(gw,'#e9e6dc')+cylG(gk,'#2a2b30')+cylG(gs,'#c9ccd4')+cylG(nid(),'#000')+
+    '<radialGradient id="'+gg+'" cx=".4" cy=".4" r=".8"><stop offset="0" stop-color="#7fc6ff"/><stop offset=".5" stop-color="#1d4c7c"/><stop offset="1" stop-color="#07101c"/></radialGradient>');
+  b+='<g transform="translate(0,0)">';
+  b+='<ellipse cx="'+(x0+tot*sc/2+6)+'" cy="'+(cy+Math.max(...sp.s.map(q=>q[1]))/2+3)+'" rx="'+(tot*sc/2+8)+'" ry="2.4" fill="#000" opacity=".3"/>';
+  // 後端卡口（銀色）
+  b+='<rect x="'+(x0-2)+'" y="'+(cy-10.5)+'" width="4.5" height="21" rx="1.2" fill="url(#'+gs+')" stroke="#4b505c" stroke-width=".6"/><rect x="'+(x0-3)+'" y="'+(cy-1.5)+'" width="1.2" height="3" fill="#e63946"/>';
+  x=x0+2.5;
+  sp.s.forEach((q,ix)=>{
+    const w=q[0]*sc,h=q[1]*(l.mount==='RF'&&ix===0?1:1),role=q[2];
+    const fillG=role==='zoom'||role==='foc'||role==='ring'?gk:(white?gw:gb);
+    const ry=Math.min(2.5,h/8);
+    if(role==='f'){
+      b+='<rect x="'+x+'" y="'+(cy-h/2)+'" width="'+w+'" height="'+h+'" rx="'+ry+'" fill="url(#'+gb+')" stroke="#505560" stroke-width=".6"/>';
+      b+='<ellipse cx="'+(x+w)+'" cy="'+cy+'" rx="'+(Math.max(2.2,w*.9))+'" ry="'+(h/2-.6)+'" fill="#0d0e11" stroke="#6a6f7c" stroke-width=".8"/>';
+      b+='<ellipse cx="'+(x+w+.3)+'" cy="'+cy+'" rx="'+(Math.max(1.8,w*.7))+'" ry="'+(h/2-2.4)+'" fill="url(#'+gg+')"/>';
+      b+='<ellipse cx="'+(x+w-.3)+'" cy="'+(cy-h*.18)+'" rx=".9" ry="'+(h*.16)+'" fill="#fff" opacity=".7"/>';
+    }else if(role==='sil'){
+      b+='<rect x="'+x+'" y="'+(cy-h/2)+'" width="'+w+'" height="'+h+'" fill="url(#'+gs+')" stroke="#6a6f7c" stroke-width=".5"/>';
+    }else{
+      b+='<rect x="'+x+'" y="'+(cy-h/2)+'" width="'+w+'" height="'+h+'" rx="'+ry+'" fill="url(#'+fillG+')" stroke="'+(white?'#8d8a7e':'#4b505c')+'" stroke-width=".6"/>';
+      if(role==='zoom'||role==='foc'||role==='ring'){
+        const step=role==='ring'?1.1:1.5;
+        for(let r=x+1.2;r<x+w-.8;r+=step)b+='<line x1="'+r.toFixed(1)+'" x2="'+r.toFixed(1)+'" y1="'+(cy-h/2+1.4)+'" y2="'+(cy+h/2-1.4)+'" stroke="'+(white?'#000':'#aab0bd')+'" opacity="'+(role==='ring'?.18:.28)+'" stroke-width=".5"/>';
+      }
+    }
+    x+=w;
+  });
+  const xe=x;let lastH=sp.s[sp.s.length-2][1];
+  // 紅圈（L 鏡）：在前段與倒數第二段交界
+  if(sp.L){const rw=2.1,rx2=xe-sp.s[sp.s.length-1][0]*sc-rw;b+='<rect x="'+(rx2-.2)+'" y="'+(cy-lastH/2-.4)+'" width="'+rw+'" height="'+(lastH+.8)+'" rx=".6" fill="#d11f2b"/><rect x="'+(rx2+.2)+'" y="'+(cy-lastH/2)+'" width=".6" height="'+lastH+'" fill="#ff7a85" opacity=".7"/>';}
+  if(sp.sw){b+='<rect x="'+(x0+6)+'" y="'+(cy-sp.s[1][1]/2-3.2)+'" width="9" height="3" rx=".8" fill="#2a2c33" stroke="#585d6b" stroke-width=".4"/><rect x="'+(x0+8)+'" y="'+(cy-sp.s[1][1]/2-2.6)+'" width="3" height="1.8" fill="#aab0bd"/>';}
+  if(sp.ext)b+='<rect x="'+(x0+tot*sc*.28)+'" y="'+(cy-24)+'" width="'+(tot*sc*.18)+'" height="5" rx="1.5" fill="url(#'+gw+')" stroke="#8d8a7e" stroke-width=".5"/>';
+  if(sp.collar){const cx=x0+tot*sc*.38,mh=Math.max(...sp.s.map(q=>q[1]))/2;b+='<path d="M'+cx+' '+(cy+mh-1)+'h'+(tot*sc*.16)+'v'+(5)+'h-'+(tot*sc*.16)+'Z" fill="'+(white?'#d3d0c4':'#2a2b30')+'" stroke="'+(white?'#8d8a7e':'#585d6b')+'" stroke-width=".6"/><rect x="'+(cx+tot*sc*.07)+'" y="'+(cy+mh+4)+'" width="'+(tot*sc*.02+1.5)+'" height="3" fill="#585d6b"/>';}
+  // 遮光罩
+  const fh=sp.s[sp.s.length-1][1];
+  if(sp.hood==='t')b+='<path d="M'+(xe)+' '+(cy-fh/2-2)+'L'+(xe+8)+' '+(cy-fh/2-5)+'V'+(cy+fh/2+5)+'L'+xe+' '+(cy+fh/2+2)+'Z" fill="url(#'+gb+')" stroke="#4b505c" stroke-width=".6" opacity=".95"/>';
+  if(sp.hood==='p')b+='<path d="M'+xe+' '+(cy-fh/2-1)+'L'+(xe+4)+' '+(cy-fh/2-6)+'Q'+(xe+7)+' '+cy+' '+(xe+4)+' '+(cy+fh/2+6)+'L'+xe+' '+(cy+fh/2+1)+'Z" fill="url(#'+gb+')" stroke="#4b505c" stroke-width=".6" opacity=".95"/>';
+  b+='<text x="114" y="8" text-anchor="end" font-size="8" font-weight="700" fill="#9aa0ae" font-family="sans-serif">'+MOUNTNAME[l.mount]+(sp.L?'　L':'')+'</text>';
+  return svgWrap(120,64,b+'</g>');
+}
+
+/* ===== 濾鏡 ===== */
+function icoFilter(f){
+  const col=f.col||'#cfe6ff';let g='';
+  const gr=nid(),gl=nid();
+  if(f.id==='uv')g='<path d="M42 27Q60 14 79 27" stroke="#fff" stroke-width="2.4" fill="none" opacity=".55"/><path d="M45 41Q60 49 75 41" stroke="#fff" stroke-width="1.5" fill="none" opacity=".3"/><text x="60" y="36" text-anchor="middle" font-size="9" font-weight="800" fill="#9ec4e8" opacity=".85" font-family="sans-serif">UV</text>';
+  else if(f.id==='cpl')g='<g stroke="'+col+'" stroke-width="1.6" opacity=".85"><line x1="44" y1="42" x2="76" y2="22"/><line x1="44" y1="34" x2="70" y2="18"/><line x1="50" y1="46" x2="78" y2="30"/></g><path d="M56 40a9 9 0 1 1 11-6" stroke="'+col+'" stroke-width="2.2" fill="none"/><path d="M67 28l1 6-5-2" fill="'+col+'"/>';
+  else if(f.id==='ice')g='<g stroke="'+col+'" stroke-width="2.4" stroke-linecap="round"><line x1="60" y1="14" x2="60" y2="50"/><line x1="44" y1="23" x2="76" y2="41"/><line x1="44" y1="41" x2="76" y2="23"/></g><g stroke="'+col+'" stroke-width="1.6" fill="none"><path d="M55 18l5 4 5-4M55 46l5-4 5 4M47 28l6 1-2 6M73 36l-6-1 2-6M47 36l6-1-2-6M73 28l-6 1 2 6"/></g>';
+  else if(f.id==='fire')g='<path d="M60 12C66 23 75 27 73 38C72 47 67 51 60 51C53 51 48 47 47 39C46 32 52 30 53 21C56 25 58 22 60 12Z" fill="#ff7a1a"/><path d="M60 29C64 35 67 37 66 42C65 47 62 48 60 48C57 48 54 46 54 42C54 38 59 37 60 29Z" fill="#ffd24a"/>';
+  else g='<path d="M60 11L64 28L81 32L64 36L60 53L56 36L39 32L56 28Z" fill="'+col+'"/><g stroke="'+col+'" stroke-width="1.5" opacity=".7"><line x1="41" y1="13" x2="50" y2="22"/><line x1="79" y1="13" x2="70" y2="22"/><line x1="41" y1="51" x2="50" y2="42"/><line x1="79" y1="51" x2="70" y2="42"/></g>';
+  let b=DEFS('<radialGradient id="'+gr+'" cx=".35" cy=".3" r=".9"><stop offset="0" stop-color="#fff" stop-opacity=".5"/><stop offset=".5" stop-color="'+col+'" stop-opacity=".22"/><stop offset="1" stop-color="'+col+'" stop-opacity=".1"/></radialGradient><linearGradient id="'+gl+'" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#eef0f4"/><stop offset=".5" stop-color="#7b808c"/><stop offset="1" stop-color="#bfc3cc"/></linearGradient>');
+  b+='<circle cx="60" cy="33" r="28" fill="url(#'+gl+')" stroke="#3b3e47"/>';
+  for(let k=0;k<36;k++){const a=k*10*Math.PI/180;b+='<line x1="'+(60+Math.cos(a)*26.2).toFixed(1)+'" y1="'+(33+Math.sin(a)*26.2).toFixed(1)+'" x2="'+(60+Math.cos(a)*28).toFixed(1)+'" y2="'+(33+Math.sin(a)*28).toFixed(1)+'" stroke="#2a2c33" stroke-width=".9"/>';}
+  b+='<circle cx="60" cy="33" r="24" fill="#2c2f37" stroke="#14151a"/><circle cx="60" cy="33" r="22.2" fill="url(#'+gr+')" stroke="#aab0bd" stroke-width=".6"/>';
+  b+='<path d="M42 21Q50 12 62 12" stroke="#fff" stroke-width="2.4" fill="none" opacity=".55"/>';
+  return svgWrap(120,64,b+g);
+}
+
+/* ===== 閃光燈（側視） ===== */
+function icoFlash(f){
+  const i=FLASHES.indexOf(f);let b='';
+  const gb=nid(),gs=nid(),gf=nid();
+  const defs=DEFS(cylG(gb,'#1d1e23')+cylG(gs,'#c9ccd4')+'<linearGradient id="'+gf+'" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff9d6"/><stop offset=".5" stop-color="#ffe9a0"/><stop offset="1" stop-color="#fff4c4"/></linearGradient>');
+  if(i===4){   // 攝影棚爆閃燈 + 反光罩 + 燈架
+    b+='<g stroke="#8a8f9c" stroke-linecap="round"><line x1="60" y1="46" x2="60" y2="60" stroke-width="4"/><path d="M60 54L42 63M60 54L78 63" stroke-width="3"/></g>';
+    b+='<rect x="52" y="38" width="16" height="10" rx="2" fill="url(#'+gb+')" stroke="#585d6b"/>';
+    b+='<path d="M60 38L22 14Q60 -4 98 14Z" fill="#e9e9ee" stroke="#8a8f9c" stroke-width="1.5" transform="translate(0,3)"/>';
+    b+='<ellipse cx="60" cy="12" rx="39" ry="9" fill="#fafafc" stroke="#a9aebb" transform="translate(0,3)"/><ellipse cx="60" cy="13" rx="31" ry="6" fill="#ffffff" opacity=".9" transform="translate(0,3)"/>';
+    b+='<ellipse cx="60" cy="15" rx="9" ry="4.4" fill="#fff6c8" stroke="#f0c24a"/><ellipse cx="60" cy="15" rx="4" ry="2" fill="#fff"/>';
+    return svgWrap(120,64,defs+b);
+  }
+  if(i===0){   // 機身內建閃光燈（彈出）
+    b+='<rect x="26" y="38" width="68" height="20" rx="5" fill="url(#'+gb+')" stroke="#585d6b"/><rect x="34" y="40" width="52" height="2" fill="#fff" opacity=".12"/>';
+    b+='<path d="M44 38L48 24H72L76 38Z" fill="url(#'+gb+')" stroke="#6a6f7c"/><rect x="52" y="26" width="16" height="8" rx="1.5" fill="url(#'+gf+')" stroke="#f0c24a"/>';
+    b+='<path d="M52 28h16M52 30.5h16M52 33h16" stroke="#e0b94a" stroke-width=".6" opacity=".6"/>';
+    b+='<g stroke="#fff6c8" stroke-width="1.8" stroke-linecap="round" opacity=".85"><line x1="60" y1="20" x2="60" y2="11"/><line x1="48" y1="21" x2="41" y2="14"/><line x1="72" y1="21" x2="79" y2="14"/></g>';
+    return svgWrap(120,64,defs+b);
+  }
+  // Speedlite：熱靴腳 → 本體（含背面螢幕）→ 旋轉座 → 閃光頭（仰角）
+  const sc=[0,.74,.8,.8][Math.min(i,3)],el=i===3;
+  b+='<g transform="translate(60,40) scale('+sc+') translate(-60,-34)">';
+  b+='<rect x="38" y="57" width="30" height="4" rx="1" fill="url(#'+gs+')" stroke="#6a6f7c" stroke-width=".5"/><rect x="48" y="55" width="10" height="3" fill="#8a8f9c"/>';
+  b+='<rect x="40" y="31" width="26" height="25" rx="3" fill="url(#'+gb+')" stroke="#585d6b"/>';
+  b+='<rect x="43" y="35" width="14" height="9" rx="1" fill="#6c8a96"/><rect x="44" y="36" width="12" height="3" fill="#a7c4cf" opacity=".7"/><text x="50" y="42.5" text-anchor="middle" font-size="3.6" font-weight="700" fill="#10222a" font-family="sans-serif">'+(i===1?'1/1':(i===2?'ETTL':'TTL'))+'</text>';
+  b+='<circle cx="60" cy="40" r="3" fill="#3a3c44" stroke="#000" stroke-width=".4"/><circle cx="60" cy="40" r="1.2" fill="#1a1b1f"/>';
+  for(let k=0;k<4;k++)b+='<rect x="43" y="'+(47+k*2.4)+'" width="14" height="1.3" rx=".6" fill="#2d2f36"/>';
+  b+='<rect x="40" y="31" width="26" height="2.4" fill="'+(i>=2?'#c1121f':'#2a2c33')+'"/>';
+  b+='<rect x="44" y="27" width="18" height="5" rx="2" fill="url(#'+gb+')" stroke="#585d6b"/>';
+  b+='<g transform="rotate(-24 53 27)">';
+  if(el)b+='<ellipse cx="53" cy="12" rx="17" ry="15" fill="url(#'+gb+')" stroke="#585d6b"/><ellipse cx="68" cy="12" rx="6" ry="14" fill="url(#'+gf+')" stroke="#f0c24a"/>';
+  else b+='<rect x="38" y="2" width="38" height="25" rx="4" fill="url(#'+gb+')" stroke="#585d6b"/><rect x="73" y="4" width="8" height="21" rx="2" fill="url(#'+gf+')" stroke="#f0c24a"/><path d="M75 7h5M75 10h5M75 13h5M75 16h5M75 19h5M75 22h5" stroke="#e0b94a" stroke-width=".6" opacity=".7"/><rect x="38" y="4" width="36" height="2" fill="#fff" opacity=".13"/>';
+  if(i>=2&&!el)b+='<rect x="38" y="11" width="36" height="2.6" fill="#c1121f" opacity=".95"/>';
+  b+='</g>';
+  b+='<g stroke="#fff6c8" stroke-width="1.6" stroke-linecap="round" opacity=".8"><line x1="93" y1="14" x2="101" y2="10"/><line x1="94" y1="20" x2="103" y2="19"/><line x1="92" y1="8" x2="98" y2="2"/></g>';
+  b+='</g>';
+  return svgWrap(120,64,defs+b);
+}
+
+/* ===== 配件 ===== */
+function icoAcc(a){
+  let b='';const gb=nid();
+  b+=DEFS(cylG(gb,'#1d1e23'));
+  if(a.cat==='grip'){
+    // 電池握把（正面）：上方卡口板 + 直拍握把 + 快門 / 轉盤
+    const rf=/bgr/.test(a.id);
+    b+='<rect x="30" y="10" width="60" height="9" rx="2" fill="url(#'+gb+')" stroke="#585d6b"/><rect x="34" y="12" width="52" height="2" fill="#fff" opacity=".12"/>';   // 與機身接合的平台
+    b+='<circle cx="60" cy="15" r="3" fill="#b9bdc8" stroke="#4b505c" stroke-width=".6"/>';                // 固定螺絲
+    b+='<path d="M32 19H88V50Q88 56 82 56H38Q32 56 32 50Z" fill="url(#'+gb+')" stroke="#585d6b"/>';
+    b+='<rect x="32" y="19" width="14" height="37" fill="#000" opacity=".25"/>';
+    for(let r=0;r<7;r++)for(let k=0;k<2;k++)b+='<circle cx="'+(36+k*5)+'" cy="'+(24+r*4.4)+'" r=".8" fill="#fff" opacity=".18"/>';
+    b+='<circle cx="76" cy="26" r="4.4" fill="#33363f" stroke="#6a6f7c"/><circle cx="76" cy="26" r="2" fill="#15161a"/><rect x="62" y="23" width="9" height="5" rx="2" fill="#3a3c44" stroke="#000" stroke-width=".4"/>';
+    b+='<rect x="48" y="38" width="30" height="12" rx="3" fill="#000" opacity=".3"/><rect x="48" y="38" width="30" height="2" rx="1" fill="#fff" opacity=".12"/>';
+    b+='<rect x="32" y="22" width="2.4" height="30" fill="#c1121f"/>';
+    b+='<text x="63" y="47" text-anchor="middle" font-size="7.5" font-weight="800" fill="#aab0bd" font-family="sans-serif">'+a.name.split(' ').pop()+'</text>';
+  }else if(a.cat==='bag'){
+    const c=a.id==='bag1'?'#56606f':(a.id==='bag2'?'#2b6cb0':'#26292f');
+    if(a.id==='bag3'){   // 硬殼器材箱
+      b+='<path d="M48 14V9Q48 7 50 7H70Q72 7 72 9V14" stroke="#9aa0ae" stroke-width="2.6" fill="none"/><rect x="24" y="14" width="72" height="42" rx="5" fill="'+c+'" stroke="#9aa0ae" stroke-width="2"/>';
+      b+='<line x1="24" y1="34" x2="96" y2="34" stroke="#9aa0ae" opacity=".7"/><rect x="34" y="30" width="12" height="9" rx="1.5" fill="#e0a526" stroke="#7a5a10"/><rect x="74" y="30" width="12" height="9" rx="1.5" fill="#e0a526" stroke="#7a5a10"/>';
+      for(let k=0;k<6;k++)b+='<line x1="'+(30+k*12)+'" x2="'+(30+k*12)+'" y1="17" y2="28" stroke="#fff" opacity=".1"/>';
+      b+='<circle cx="30" cy="20" r="1.6" fill="#9aa0ae"/><circle cx="90" cy="20" r="1.6" fill="#9aa0ae"/><circle cx="30" cy="50" r="1.6" fill="#9aa0ae"/><circle cx="90" cy="50" r="1.6" fill="#9aa0ae"/>';
+    }else{               // 後背包
+      b+='<path d="M46 14Q46 6 54 6H66Q74 6 74 14" stroke="#14161a" stroke-width="3" fill="none"/><rect x="32" y="13" width="56" height="44" rx="11" fill="'+c+'" stroke="#14161a"/>';
+      b+='<path d="M32 24Q23 38 33 52M88 24Q97 38 87 52" stroke="#14161a" stroke-width="3.4" fill="none"/>';
+      b+='<rect x="40" y="35" width="40" height="18" rx="5" fill="'+shade(c,-.25)+'" stroke="#14161a" stroke-width=".8"/><path d="M44 42h32" stroke="#fff" opacity=".3"/><rect x="58" y="38" width="4" height="7" rx="1" fill="#c9ccd4"/>';
+      b+='<path d="M40 22H80" stroke="#14161a" stroke-width="1.4"/><rect x="56" y="19" width="8" height="5" rx="1.5" fill="#33363f" stroke="#000" stroke-width=".5"/>';
+      if(a.id==='bag2'){b+='<path d="M50 31q10-9 20 0" stroke="#bfe3ff" stroke-width="2.2" fill="none"/><path d="M52 29q8-6 16 0" stroke="#fff" stroke-width="1" fill="none" opacity=".6"/>';}
+    }
+  }else if(a.cat==='refl'){   // 折疊反光板（銀 / 金 / 白）
+    const gold=a.id==='rf3',silver=a.id==='rf2',r=a.id==='rf1'?19:(silver?24:27);
+    const g1=nid(),g2=nid();
+    b+=DEFS('<radialGradient id="'+g1+'" cx=".35" cy=".3" r=".9"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#d8d9de"/></radialGradient><radialGradient id="'+g2+'" cx=".35" cy=".3" r=".9"><stop offset="0" stop-color="#ffe9a3"/><stop offset="1" stop-color="#b8892a"/></radialGradient><linearGradient id="'+g1+'s" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f4f5f8"/><stop offset=".5" stop-color="#9ea3af"/><stop offset="1" stop-color="#e3e5ea"/></linearGradient>');
+    b+='<circle cx="60" cy="32" r="'+r+'" fill="'+(gold?'url(#'+g2+')':(silver?'url(#'+g1+'s)':'url(#'+g1+')'))+'" stroke="#23262d" stroke-width="3.6"/>';
+    b+='<circle cx="60" cy="32" r="'+(r-4)+'" fill="none" stroke="#fff" opacity=".45"/>';
+    if(silver)b+='<path d="M60 '+(32-r+1)+'A'+(r-1)+' '+(r-1)+' 0 0 1 60 '+(32+r-1)+'Z" fill="url(#'+g2+')" opacity=".75"/>';
+    if(a.id==='rf3')for(let k=0;k<4;k++){const an=(k*90+45)*Math.PI/180;b+='<line x1="60" y1="32" x2="'+(60+Math.cos(an)*(r-3)).toFixed(1)+'" y2="'+(32+Math.sin(an)*(r-3)).toFixed(1)+'" stroke="#fff" opacity=".35"/>';}
+    b+='<path d="M44 22Q52 13 63 14" stroke="#fff" stroke-width="3" fill="none" opacity=".6"/>';
+    b+='<rect x="'+(60+r-3)+'" y="30" width="7" height="4" rx="1.5" fill="#33363f" stroke="#000" stroke-width=".4"/>';
+  }else{   // 備用電池（LP-E6 外型：斜角 + 接點 + 標籤）
+    const n=a.id==='bt3'?3:(a.id==='bt2'?2:1);
+    for(let k=0;k<n;k++){const x=60-(n*24)/2+k*24+(k?1:0);
+      b+='<path d="M'+x+' 20H'+(x+22)+'V46L'+(x+17)+' 52H'+(x+3)+'L'+x+' 46Z" fill="url(#'+gb+')" stroke="#9aa0ae"/>';
+      b+='<rect x="'+(x+2)+'" y="22" width="18" height="14" rx="1.5" fill="#e9ecf2"/><rect x="'+(x+2)+'" y="22" width="18" height="4" rx="1.5" fill="#1d4f91"/>';
+      b+='<path d="M'+(x+11)+' 27L'+(x+7)+' 33H'+(x+10)+'L'+(x+9)+' 39L'+(x+15)+' 31H'+(x+12)+'Z" fill="#2fa84f"/>';
+      for(let q=0;q<3;q++)b+='<rect x="'+(x+5+q*4.4)+'" y="12" width="3" height="8" fill="#e0b94a" stroke="#7a5a10" stroke-width=".4"/>';
+      b+='<rect x="'+(x+8)+'" y="38" width="6" height="3" rx="1" fill="#33363f"/>';}
+    if(a.id==='bt2'){b+='<rect x="30" y="54" width="60" height="7" rx="2" fill="#2d2f36" stroke="#585d6b"/><circle cx="38" cy="57.5" r="1.4" fill="#2fa84f"/><rect x="82" y="55.5" width="5" height="4" fill="#9aa0ae"/>';}
+  }
+  return svgWrap(120,64,b);
+}
+function icoSupply(kind){
+  if(kind==='med')return svgWrap(120,64,'<rect x="28" y="12" width="64" height="42" rx="7" fill="#f6f6f6" stroke="#9aa"/><rect x="28" y="12" width="64" height="9" rx="4" fill="#d62828"/><rect x="53" y="25" width="14" height="25" fill="#d62828"/><rect x="46" y="31" width="28" height="13" fill="#d62828"/><path d="M52 12V8Q52 6 54 6H66Q68 6 68 8V12" stroke="#9aa" stroke-width="3" fill="none"/>');
+  if(kind==='flash')return icoFlash(curFl());
+  return icoCard({type:'SD',name:'SD 補充'});
+}
+function shopIcon(o){
+  try{
+    const a=o.act||'';
+    if(/cam$/.test(a))return icoCamera(byId(CAMERAS,o.id));
+    if(/card$/.test(a))return icoCard(byId(CARDS,o.id));
+    if(/lens$/.test(a))return icoLens(byId(LENSES,o.id));
+    if(/filt$/.test(a))return icoFilter(byId(FILTERS,o.id));
+    if(/fl$/.test(a))return icoFlash(byId(FLASHES,o.id));
+    if(/acc$/.test(a))return icoAcc(byId(ACCS,o.id));
+    if(a==='supR')return icoSupply('card');
+    if(a==='supG')return icoSupply('flash');
+    if(a==='supH')return icoSupply('med');
+  }catch(err){}
+  return '';
+}
+/* 目前配置：側視組裝預覽（與商店圖示同風格；鏡頭 / 閃光燈直接嵌入各自的圖示） */
+function innerSvg(s){return s.replace(/^<svg[^>]*>/,'').replace(/<\/svg>$/,'');}
+function rigSVG(){
+  const cam=curCam(),L=curLens(),F=curFilt(),fl=curFl(),i=CAMERAS.indexOf(cam),s=CAMSPEC[i]||CAMSPEC[0];
+  const g1=nid(),g2=nid(),pt=nid(),sp=LENSSPEC[L.id];
+  const W=360,H=156,yB=134,bw=s.fam==='pro'?76:(s.fam==='dslr'?70:66),bh=s.h+(s.fam==='pro'?0:0)+8;
+  const bx=36,bR=bx+bw,yT=yB-bh,cy=yT+bh*(s.fam==='pro'?.42:.46);
+  const dark=shade(s.col,-.45),light=shade(s.col,.16),grip=gripBonus()>0;
+  let b=DEFS('<linearGradient id="'+g1+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="'+shade(s.col,.28)+'"/><stop offset=".25" stop-color="'+s.col+'"/><stop offset="1" stop-color="'+dark+'"/></linearGradient>'+
+    '<linearGradient id="'+g2+'" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f3f4f7"/><stop offset=".5" stop-color="#9ca1ad"/><stop offset="1" stop-color="#6a6f7c"/></linearGradient>'+
+    '<pattern id="'+pt+'" width="3" height="3" patternUnits="userSpaceOnUse"><circle cx="1.5" cy="1.5" r=".55" fill="#fff" opacity=".14"/></pattern>');
+  b+='<ellipse cx="'+(bx+150)+'" cy="'+(yB+(grip?15:5))+'" rx="170" ry="4" fill="#000" opacity=".3"/>';
+  // 電池握把（機身下方）
+  if(grip){b+='<path d="M'+(bx+4)+' '+(yB-2)+'H'+(bR-2)+'V'+(yB+10)+'Q'+(bR-2)+' '+(yB+14)+' '+(bR-8)+' '+(yB+14)+'H'+(bx+10)+'Q'+(bx+4)+' '+(yB+14)+' '+(bx+4)+' '+(yB+9)+'Z" fill="url(#'+g1+')" stroke="'+dark+'"/><path d="M'+(bx+4)+' '+(yB-2)+'H'+(bR-2)+'V'+(yB+14)+'H'+(bx+4)+'Z" fill="url(#'+pt+')"/><rect x="'+(bR-14)+'" y="'+(yB+2)+'" width="9" height="3" rx="1.5" fill="#c1121f"/>';}
+  // 頂部：五稜鏡 / EVF
+  const hx=bx+bw*.46;
+  if(s.mt==='EF'){const pw=bw*.56,ph=s.fam==='pro'?15:16,px=hx-pw/2;
+    b+='<path d="M'+(px-8)+' '+(yT+2)+'Q'+(px-3)+' '+(yT-ph)+' '+(px+10)+' '+(yT-ph)+'H'+(px+pw-4)+'Q'+(px+pw+6)+' '+(yT-ph)+' '+(px+pw+10)+' '+(yT+2)+'Z" fill="url(#'+g1+')" stroke="'+dark+'"/><path d="M'+(px+pw-8)+' '+(yT-ph+4)+'L'+(px+pw+8)+' '+(yT-2)+'" stroke="#000" opacity=".35"/>';
+    b+='<rect x="'+(hx-9)+'" y="'+(yT-ph-3)+'" width="18" height="3.4" rx=".8" fill="url(#'+g2+')"/>';}
+  else{const pw=bw*.5,ph=s.fam==='pro'?9:11,px=hx-pw/2-4;
+    b+='<path d="M'+(px-6)+' '+(yT+2)+'Q'+(px-2)+' '+(yT-ph)+' '+(px+8)+' '+(yT-ph)+'H'+(px+pw-6)+'Q'+(px+pw+2)+' '+(yT-ph)+' '+(px+pw+8)+' '+(yT+2)+'Z" fill="url(#'+g1+')" stroke="'+dark+'"/>';
+    b+=s.cover?'<path d="M'+(hx-10)+' '+(yT-ph)+'l22 -2v-4h-24Z" fill="#33363f" stroke="#585d6b" stroke-width=".6"/>':'<rect x="'+(hx-9)+'" y="'+(yT-ph-3)+'" width="18" height="3.4" rx=".8" fill="url(#'+g2+')"/>';}
+  // 機身側面
+  b+='<rect x="'+bx+'" y="'+yT+'" width="'+bw+'" height="'+bh+'" rx="8" fill="url(#'+g1+')" stroke="'+dark+'"/>';
+  b+='<rect x="'+(bx+5)+'" y="'+(yT+1.6)+'" width="'+(bw-10)+'" height="2.4" rx="1.2" fill="#fff" opacity=".13"/>';
+  b+='<rect x="'+(bx-7)+'" y="'+(yT+6)+'" width="14" height="'+(bh-14)+'" rx="6" fill="'+shade(s.col,-.15)+'" stroke="'+dark+'"/>';   // 背面（螢幕側）凸起
+  if(s.lcd)b+='<rect x="'+(bx+8)+'" y="'+(yT-5)+'" width="14" height="5" rx="1" fill="#6c8a96" stroke="#1b1c20"/>';
+  // 前方握把（朝鏡頭側）
+  const gx=bR-bw*.34;
+  b+='<path d="M'+gx+' '+(yT+4)+'H'+(bR+5)+'Q'+(bR+9)+' '+(yT+4)+' '+(bR+9)+' '+(yT+10)+'V'+(yB-4)+'Q'+(bR+9)+' '+yB+' '+(bR+4)+' '+yB+'H'+gx+'Z" fill="'+shade(s.col,-.14)+'" stroke="'+dark+'"/>';
+  b+='<path d="M'+gx+' '+(yT+4)+'H'+(bR+5)+'Q'+(bR+9)+' '+(yT+4)+' '+(bR+9)+' '+(yT+10)+'V'+(yB-4)+'Q'+(bR+9)+' '+yB+' '+(bR+4)+' '+yB+'H'+gx+'Z" fill="url(#'+pt+')"/>';
+  b+='<rect x="'+(bR+6.5)+'" y="'+(yT+12)+'" width="2" height="'+(bh-24)+'" rx="1" fill="#c1121f"/>';
+  b+='<circle cx="'+(bR-3)+'" cy="'+(yT+8)+'" r="3" fill="#3a3c44" stroke="#000" stroke-width=".5"/>';   // 快門鈕 / 轉盤
+  if(s.fam==='pro')b+='<line x1="'+bx+'" x2="'+(bR+8)+'" y1="'+(yT+bh*.74)+'" y2="'+(yT+bh*.74)+'" stroke="#000" opacity=".5" stroke-width="1.4"/>';
+  b+='<text x="'+(bx+bw*.34)+'" y="'+(yB-8)+'" text-anchor="middle" font-size="8" font-weight="800" fill="#aab0bd" font-family="sans-serif">'+cam.short+'</text>';
+  // 卡口（銀色環）
+  b+='<rect x="'+(bR+5)+'" y="'+(cy-15)+'" width="6" height="30" rx="2" fill="url(#'+g2+')" stroke="#4b505c" stroke-width=".6"/><rect x="'+(bR+4)+'" y="'+(cy-6)+'" width="2" height="3" fill="#e63946"/>';
+  // 鏡頭（嵌入商店圖示）：縮放使最大鏡筒高度約 60px 內
+  const tot=sp?sp.s.reduce((t,q)=>t+q[0],0):44,lsc=Math.min(1,100/(tot+10)),mh=sp?Math.max(...sp.s.map(q=>q[1])):30;
+  const k=Math.min(1.5,66/mh);
+  let ls=innerSvg(icoLens(L)).replace(/<text [^>]*>[^<]*<\/text>/,'').replace(/<ellipse cx="[\d.]+" cy="[\d.]+" rx="[\d.]+" ry="2.4" fill="#000" opacity=".3"\/>/,'');
+  b+='<g transform="translate('+(bR+11-6*k).toFixed(1)+','+(cy-31*k).toFixed(1)+') scale('+k.toFixed(3)+')">'+ls+'</g>';
+  // 濾鏡：前端一圈色環
+  const xe=8+2.5+tot*lsc,fh=sp?sp.s[sp.s.length-1][1]:30,fx=bR+11+(xe-6)*k;
+  if(F.col)b+='<ellipse cx="'+(fx+1)+'" cy="'+cy+'" rx="3.6" ry="'+(fh*k/2+1.5)+'" fill="'+F.col+'" opacity=".55" stroke="'+F.col+'"/><ellipse cx="'+(fx+1)+'" cy="'+cy+'" rx="6" ry="'+(fh*k/2+5)+'" fill="'+F.col+'" opacity=".12"/>';
+  // 閃光燈（熱靴）：縮放嵌入
+  const fi=FLASHES.indexOf(fl),fsc=fi===4?.55:(fi===0?.8:.95),hy=yT-(s.mt==='EF'?(s.fam==='pro'?18:19):(s.fam==='pro'?12:14));
+  const fsvg=innerSvg(icoFlash(fl));
+  if(fi===0)b+='<g transform="translate('+(hx-60*fsc)+','+(hy-44*fsc)+') scale('+fsc+')">'+fsvg+'</g>';
+  else if(fi===4)b+='<g transform="translate('+(hx-60*fsc)+','+(hy-56*fsc)+') scale('+fsc+')">'+fsvg+'</g>';
+  else b+='<g transform="translate('+(hx-53*fsc)+','+(hy-61*fsc)+') scale('+fsc+')">'+fsvg+'</g>';
+  return '<svg viewBox="0 -26 '+W+' '+(H+26)+'" xmlns="http://www.w3.org/2000/svg">'+b+'</svg>';
+}
+
+function bar(label,val,max,txt){
+  return '<div class="stat"><span>'+label+'</span><div class="bar"><i style="width:'+clamp(val/max*100,3,100).toFixed(0)+'%"></i></div><b>'+txt+'</b></div>';
+}
+function item(o){
+  return '<div class="item '+(o.eq?'eq ':'')+(o.own?'own':'')+'"><div class="ih"><div class="ico">'+shopIcon(o)+'</div><div class="it"><h3>'+o.title+'</h3><span class="sub">'+o.sub+'</span></div></div>'+
+    o.stats.join('')+
+    '<div class="ia"><span class="price">'+o.price+'</span><button data-act="'+o.act+'" data-id="'+o.id+'"'+(o.dis?' disabled':'')+'>'+o.btn+'</button></div>'+
+    (o.note?'<div class="note">'+o.note+'</div>':'')+'</div>';
+}
+function renderShop(){
+  saveGame();
+  const cam=curCam(),card=curCard(),fl=curFl();
+  $('gold').textContent=S.gold;
+  $('go').textContent='開始第 '+(S.wave+1)+' 波（'+themeLabel(S.wave+1)+'）';
+  const L0=curLens(),dps=Math.round(cam.dmg*L0.dmg*L0.n*cam.rate*L0.rate*(cropped(cam,L0)?CROP.dmg:1));
+  $('load').innerHTML='<div class="loadwrap"><div class="rig">'+rigSVG()+'</div><div>目前配置：<b>'+cam.short+'</b>（DPS 約 '+dps+'）＋ <b>'+card.name+'</b>（'+card.cap+' 發・換卡 '+CARDTYPES[card.type].reload+'s）＋ <b>'+fl.name+'</b>（傷害 '+fl.dmg+'）<br>鏡頭：<b>'+curLens().name+(cropped(cam,curLens())?'（裁切）':'')+'</b>　濾鏡：<b>'+curFilt().name+'</b><br>'+
+    '生命 '+Math.ceil(S.hp)+' / '+maxHP()+(shieldMax()?'（護盾 '+shieldMax()+'）':'')+(bagReduce()?'　減傷 '+Math.round(bagReduce()*100)+'%':'')+'　備彈 '+S.reserve+' / '+reserveCap()+'　閃光燈 '+S.grenades+' / '+fl.carry+'　最佳波次 '+S.best+'<br>裝備收集：已購價值 '+ownedValue().toLocaleString()+' / '+EQUIP_TOTAL.toLocaleString()+' 金幣（通關目標 '+TOTAL_WAVES+' 波）</div></div>';
+  $('tabs').innerHTML=TABS.map(t=>'<button class="tab'+(t[0]===tab?' on':'')+'" data-tab="'+t[0]+'">'+t[1]+'</button>').join('');
+  let h='';
+  if(tab==='cam'){
+    for(const c of CAMERAS){
+      const own=!!S.ownCam[c.id],eq=S.cam===c.id,cardOk=!!bestOwnedCardFor(c),lensOk=!!bestOwnedLensFor(c);
+      let btn,dis=false,note='';
+      if(eq){btn='已裝備';dis=true;}
+      else if(own){btn='裝備';if(!cardOk||!lensOk){dis=true;note=(!cardOk?'需先擁有相容卡：'+c.slots.map(s=>CARDTYPES[s].label).join(' / '):'')+(!cardOk&&!lensOk?'；':'')+(!lensOk?'需先擁有相容鏡頭，接環：'+mountText(c):'');}}
+      else{btn='購買';dis=S.gold<c.price;}
+      h+=item({title:c.name,sub:c.year+'年　卡：'+c.slots.map(s=>CARDTYPES[s].label).join('/')+'　接環：'+mountText(c),eq,own,
+        stats:[bar('傷害',c.dmg,75,c.dmg),bar('射速',c.rate,12,c.rate+'/s'),bar('精準',11-c.spread,10,'±'+c.spread+'°'),
+               bar('子彈追蹤',c.track,13,c.track),bar('生命',c.hp,280,c.hp)],
+        price:own?'已擁有':'● '+c.price,act:own?'eqcam':'buycam',id:c.id,btn,dis,note});
+    }
+  }else if(tab==='card'){
+    for(const c of CARDS){
+      const own=!!S.ownCard[c.id],eq=S.card===c.id,ok=compat(cam,c);
+      let btn,dis=false,note='';
+      if(eq){btn='已裝備';dis=true;}
+      else if(own){btn='裝備';if(!ok){dis=true;}}
+      else{btn='購買';dis=S.gold<c.price;}
+      if(!ok)note='目前機身（'+cam.short+'）不支援此卡。相容機身：'+CAMERAS.filter(x=>x.slots.includes(c.type)).map(x=>x.short).join('、');
+      h+=item({title:c.name,sub:CARDTYPES[c.type].label+' 卡',eq,own,
+        stats:[bar('容量',c.cap,1000,c.cap+' 發'),bar('換卡速度',3-CARDTYPES[c.type].reload,2.6,CARDTYPES[c.type].reload+'s')],
+        price:own?'已擁有':'● '+c.price,act:own?'eqcard':'buycard',id:c.id,btn,dis,note});
+    }
+  }else if(tab==='fl'){
+    for(const f of FLASHES){
+      const own=!!S.ownFl[f.id],eq=S.fl===f.id;
+      let btn,dis=false;
+      if(eq){btn='已裝備';dis=true;}else if(own){btn='裝備';}else{btn='購買';dis=S.gold<f.price;}
+      h+=item({title:f.name,sub:'閃光手雷',eq,own,
+        stats:[bar('傷害',f.dmg,900,f.dmg),bar('範圍',f.radius,230,f.radius+'px'),bar('暈眩',f.stun,3.2,f.stun+'s'),bar('攜帶數',f.carry,5,f.carry)],
+        price:own?'已擁有':'● '+f.price,act:own?'eqfl':'buyfl',id:f.id,btn,dis,note:''});
+    }
+  }else if(tab==='lens'){
+    h+='<div style="grid-column:1/-1;font-size:13px;color:#b9b6aa">目前機身 <b style="color:#f3f1ea">'+cam.short+'</b>　接環：'+mountText(cam)+'　<button class="tab'+(onlyCompat?' on':'')+'" data-act="togglecompat" data-id="x">只顯示可用鏡頭</button></div>';
+    const order=['std','wide','tele','rkt'];
+    const list=LENSES.filter(l=>!onlyCompat||lcompat(cam,l)).sort((x,y)=>order.indexOf(x.type)-order.indexOf(y.type)||x.price-y.price);
+    for(const l of list){
+      const own=!!S.ownLens[l.id],eq=S.lens===l.id,ok=lcompat(cam,l),cr=ok&&cropped(cam,l);
+      let btn,dis=false,note=l.desc;
+      if(eq){btn='已裝備';dis=true;}else if(own){btn='裝備';dis=!ok;}else{btn='購買';dis=S.gold<l.price;}
+      if(!ok)note='【'+cam.short+' 無法使用 '+MOUNTNAME[l.mount]+' 接環】'+note;
+      else if(cr)note='【APS-C 裁切模式】需轉接環；傷害 ×'+CROP.dmg+'、追蹤 ×'+CROP.trk+(reachMul(cam,l)>1?'、射程 ×'+CROP.reach+'（等效焦段變長）':'')+'。'+note;
+      else if(l.mount==='EF'&&cam.mounts.includes('RF'))note='（需 EF→RF 轉接環）'+note;
+      h+=item({title:l.name,sub:MOUNTNAME[l.mount]+' 接環・'+l.kind+'・光學 ×'+l.q.toFixed(2),eq,own,
+        stats:[bar('單次傷害',l.dmg*l.n*(cr?CROP.dmg:1),6,'×'+(l.dmg*l.n*(cr?CROP.dmg:1)).toFixed(1)),bar('射速',l.rate,1.3,'×'+l.rate.toFixed(2)),bar('射程',l.spd*l.life*reachMul(cam,l),1400,Math.round(l.spd*l.life*reachMul(cam,l))),bar('耗彈',4-l.cost,3,l.cost+'/次')],
+        price:own?'已擁有':'● '+l.price,act:own?'eqlens':'buylens',id:l.id,btn,dis,note});
+    }
+  }else if(tab==='acc'){
+    h+='<div style="grid-column:1/-1;font-size:13px;color:#b9b6aa">配件分四類，每類一次只能裝備一件。目前：'+Object.keys(ACCCAT).map(c=>ACCCAT[c]+'＝'+(accOf(c)?accOf(c).name:'無')).join('、')+'</div>';
+    for(const a of ACCS){
+      const own=!!S.ownAcc[a.id],eq=S.acc[a.cat]===a.id,ok=a.cat!=='grip'||gripOk(cam,a);
+      let btn,dis=false,note=a.desc;
+      if(eq){btn='已裝備';dis=true;}else if(own){btn='裝備';dis=!ok;}else{btn='購買';dis=S.gold<a.price;}
+      if(a.cat==='grip'&&!ok)note='【'+cam.short+' 無法使用此握把】'+note;
+      if(eq&&!ok)note='（已裝備，但目前機身不支援，加成未生效）'+note;
+      let st=[];
+      if(a.cat==='grip')st=[bar('最大生命',a.val,.25,'+'+Math.round(a.val*100)+'%')];
+      else if(a.cat==='bag')st=[bar('減傷',a.val,.12,'-'+Math.round(a.val*100)+'%')];
+      else if(a.cat==='refl')st=[bar('護盾',a.val,60,a.val+'')];
+      else st=[bar('復活生命',a.val,.55,Math.round(a.val*100)+'%'),bar('每波次數',a.n,2,a.n+' 次')];
+      h+=item({title:a.name,sub:ACCCAT[a.cat],eq,own,stats:st,price:own?'已擁有':'● '+a.price,act:own?'eqacc':'buyacc',id:a.id,btn,dis,note});
+    }
+  }else if(tab==='filt'){
+    for(const f of FILTERS){
+      const own=!!S.ownFilt[f.id],eq=S.filt===f.id;
+      let btn,dis=false;
+      if(eq){btn='已裝備';dis=true;}else if(own){btn='裝備';}else{btn='購買';dis=S.gold<f.price;}
+      h+=item({title:f.name,sub:'彈藥效果：'+f.short,eq,own,stats:[],
+        price:own?'已擁有':'● '+f.price,act:own?'eqfilt':'buyfilt',id:f.id,btn,dis,note:f.desc});
+    }
+  }else if(tab==='album'){
+    const tot=THEMES.length*4,got=Object.keys(S.album).length,sets=Object.keys(S.albumSets).length;
+    h+='<div class="album"><div class="alsum">擊殺怪物時拍下的照片會收進圖鑑。已收集 <b>'+got+' / '+tot+'</b> 張・完成主題 <b>'+sets+' / '+THEMES.length+'</b>・目前圖鑑加成：傷害 <b>+'+(sets*.5).toFixed(1)+'%</b>（每完成一個主題 +0.5%，最多 +5%）<br>首次拍到每種怪物 +金幣，集滿同主題 4 種（普通、快跑、重裝、首領）再給一筆大獎勵。</div>';
+    THEMES.forEach((th,ti)=>{
+      const have=ALTYPES.filter(t=>S.album[ti+'-'+t]).length,done=!!S.albumSets[ti];
+      h+='<div class="alth'+(done?' done':'')+'"><h4><div>'+(ti+1)+'. '+th.label+'</div><span>'+(done?'✓ 已完成':have+' / 4')+'（完成獎勵 ● '+150*(ti+1)+'）</span></h4><div class="alrow">';
+      for(const t of ALTYPES){
+        const a=S.album[ti+'-'+t];
+        h+='<div class="alc'+(a?' got':'')+(t==='boss'?' boss':'')+'"><div class="ph">'+(a?(a.img?'<img src="'+a.img+'" alt="">':'📷'):'？')+'</div><b>'+(a?th.names[t]:'？？？')+'</b>'+ALTLABEL[t]+(a?'・拍到 '+a.n+' 次':'')+'</div>';
+      }
+      h+='</div></div>';
+    });
+    h+='</div>';
+  }else{
+    const missR=reserveCap()-S.reserve,cR=Math.ceil(missR*.35);
+    const missG=fl.carry-S.grenades,cG=missG*fl.ammoPrice;
+    const missH=Math.ceil(maxHP()-S.hp),cH=Math.ceil(missH*.8);
+    h+=item({title:'補滿備彈',sub:'備彈 '+S.reserve+' / '+reserveCap(),own:false,stats:[bar('備彈',S.reserve,reserveCap(),S.reserve)],price:'● '+cR,act:'supR',id:'r',btn:'補滿',dis:missR<=0||S.gold<cR,note:'每發 0.35 金幣'});
+    h+=item({title:'補滿閃光燈',sub:fl.name,own:false,stats:[bar('數量',S.grenades,fl.carry,S.grenades+' / '+fl.carry)],price:'● '+cG,act:'supG',id:'g',btn:'補滿',dis:missG<=0||S.gold<cG,note:'每顆 '+fl.ammoPrice+' 金幣'});
+    h+=item({title:'回復生命',sub:'目前 '+Math.ceil(S.hp)+' / '+maxHP(),own:false,stats:[bar('生命',S.hp,maxHP(),Math.ceil(S.hp))],price:'● '+cH,act:'supH',id:'h',btn:'回復',dis:missH<=0||S.gold<cH,note:'每點生命 0.8 金幣'});
+  }
+  $('list').innerHTML=h;
+}
+function buy(price){if(S.gold<price){msg('金幣不足');return false;}S.gold-=price;return true;}
+function act(a,id){
+  const cam=curCam();
+  if(a==='buycam'){const c=byId(CAMERAS,id);if(buy(c.price)){S.ownCam[id]=1;msg('已購買 '+c.name+'，記得裝備。');}}
+  else if(a==='eqcam'){
+    const c=byId(CAMERAS,id);let card=curCard();
+    if(!compat(c,card)){card=bestOwnedCardFor(c);}
+    let lens=curLens();if(!lcompat(c,lens))lens=bestOwnedLensFor(c);
+    if(!card){msg(c.short+' 需要相容的記憶卡（'+c.slots.map(s=>CARDTYPES[s].label).join(' / ')+'），請先到「記憶卡」購買。');}
+    else if(!lens){msg(c.short+' 需要相容的鏡頭（接環：'+mountText(c)+'），請先到「鏡頭」購買。');}
+    else{
+      const ratio=S.hp/maxHP();S.cam=id;S.card=card.id;S.lens=lens.id;
+      if(S.cardMag[card.id]==null)S.cardMag[card.id]=card.cap;
+      S.hp=Math.max(1,Math.min(maxHP(),maxHP()*ratio));S.reserve=Math.min(S.reserve,reserveCap());
+      msg('已裝備 '+c.name+'（記憶卡：'+card.name+'、鏡頭：'+lens.name+'）');
+    }
+  }
+  else if(a==='buycard'){const c=byId(CARDS,id);if(buy(c.price)){S.ownCard[id]=1;S.cardMag[id]=c.cap;msg('已購買 '+c.name);}}
+  else if(a==='eqcard'){const c=byId(CARDS,id);if(compat(cam,c)){S.card=id;S.reserve=Math.min(S.reserve,reserveCap());msg('已換上 '+c.name);}}
+  else if(a==='buyfl'){const f=byId(FLASHES,id);if(buy(f.price)){S.ownFl[id]=1;msg('已購買 '+f.name);}}
+  else if(a==='eqfl'){const f=byId(FLASHES,id);S.fl=id;S.grenades=Math.min(S.grenades,f.carry);msg('已裝備 '+f.name);}
+  else if(a==='buylens'){const l=byId(LENSES,id);if(buy(l.price)){S.ownLens[id]=1;msg('已購買 '+l.name);}}
+  else if(a==='eqlens'){const l=byId(LENSES,id);if(lcompat(cam,l)){S.lens=id;msg('已裝上 '+l.name);}}
+  else if(a==='togglecompat'){onlyCompat=!onlyCompat;}
+  else if(a==='buyfilt'){const f=byId(FILTERS,id);if(buy(f.price)){S.ownFilt[id]=1;msg('已購買 '+f.name);}}
+  else if(a==='eqfilt'){S.filt=id;msg('已裝上 '+byId(FILTERS,id).name);}
+  else if(a==='buyacc'){const x=byId(ACCS,id);if(buy(x.price)){S.ownAcc[id]=1;msg('已購買 '+x.name);}}
+  else if(a==='eqacc'){const x=byId(ACCS,id);if(x.cat!=='grip'||gripOk(cam,x)){const old=maxHP();S.acc[x.cat]=id;S.hp=Math.max(1,Math.min(maxHP(),S.hp+Math.max(0,maxHP()-old)));msg('已裝備 '+x.name);}}
+  else if(a==='supR'){const c=Math.ceil((reserveCap()-S.reserve)*.35);if(buy(c)){S.reserve=reserveCap();msg('備彈已補滿');}}
+  else if(a==='supG'){const f=curFl(),c=(f.carry-S.grenades)*f.ammoPrice;if(buy(c)){S.grenades=f.carry;msg('閃光燈已補滿');}}
+  else if(a==='supH'){const c=Math.ceil((maxHP()-S.hp)*.8);if(buy(c)){S.hp=maxHP();msg('生命已回復');}}
+  renderShop();
+}
+
+/* ---------- 輸入 ---------- */
+cv.addEventListener('pointerdown',e=>{
+  ac();
+  if(mode!=='play')return;
+  throwFlash();          // 點一下畫面 = 丟閃光燈
+  e.preventDefault();
+});
+cv.addEventListener('contextmenu',e=>e.preventDefault());
+window.addEventListener('keydown',e=>{
+  const k=e.key.toLowerCase();keys[k]=true;
+  if(k==='m'){muted=!muted;}
+  if(mode==='play'){
+    if(k==='r')startReload();
+    if(k==='g'||k===' ')throwFlash();
+    if(k.startsWith('arrow')||k===' ')e.preventDefault();
+  }
+});
+window.addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false;});
+window.addEventListener('blur',()=>{for(const k in keys)keys[k]=false;});
+$('tabs').addEventListener('click',e=>{const t=e.target.closest('[data-tab]');if(t){tab=t.dataset.tab;msg('');renderShop();}});
+$('list').addEventListener('click',e=>{const b=e.target.closest('button[data-act]');if(b&&!b.disabled)act(b.dataset.act,b.dataset.id);});
+$('go').addEventListener('click',()=>{ac();startWave();});
+function jumpTo(full){
+  cheat=true;
+  const w=clamp(parseInt(($('jw')||{}).value)||1,1,99);
+  if(full){
+    for(const [arr,o] of [[CAMERAS,S.ownCam],[CARDS,S.ownCard],[LENSES,S.ownLens],[FILTERS,S.ownFilt],[FLASHES,S.ownFl],[ACCS,S.ownAcc]])for(const x of arr)o[x.id]=1;
+    const cm=CAMERAS[CAMERAS.length-1];S.cam=cm.id;
+    S.card=bestOwnedCardFor(cm).id;S.lens=bestOwnedLensFor(cm).id;S.fl=FLASHES[FLASHES.length-1].id;
+    S.acc.bag='bag3';S.acc.refl='rf3';S.acc.batt='bt3';
+    S.acc.grip=(ACCS.filter(a=>a.cat==='grip'&&gripOk(cm,a)).pop()||{}).id||null;
+    for(const c of CARDS)S.cardMag[c.id]=c.cap;
+    S.hp=maxHP();S.grenades=curFl().carry;S.reserve=reserveCap();
+  }
+  S.wave=w-1;S.endless=false;msg('已設定從第 '+w+' 波開始'+(full?'（全裝備）':'')+'（測試模式：本次不會覆蓋存檔，重新整理可回到原存檔）');renderShop();
+}
+if(typeof location!=='undefined'&&/[?&]dev\b/.test(location.search)){   // 開發測試面板：只有網址加 ?dev 才會出現
+  const d=document.createElement('div');d.className='load';d.id='jump';d.style.cssText='display:flex;gap:8px;align-items:center;flex-wrap:wrap';
+  d.innerHTML='<b>測試跳關：</b>從第 <input id="jw" type="number" min="1" max="99" value="1" style="width:64px;padding:4px;background:#222;color:#fff;border:1px solid #666;border-radius:4px"> 波開始 <button class="btn" id="jkeep" style="padding:4px 10px;font-size:13px">保留目前裝備</button><button class="btn" id="jfull" style="padding:4px 10px;font-size:13px">全裝備＋滿血</button>';
+  $('load').before(d);$('jkeep').addEventListener('click',()=>jumpTo(false));$('jfull').addEventListener('click',()=>jumpTo(true));
+}
+$('retry').addEventListener('click',()=>{
+  S.gold=Math.floor(S.gold*.75);S.wave=Math.max(0,S.wave-1);
+  S.hp=maxHP();S.grenades=curFl().carry;S.reserve=Math.max(S.reserve,Math.round(reserveCap()*.75));
+  showShop('已回到商店，金幣 -25%，可以重新配置後再挑戰。');
+});
+$('endless').addEventListener('click',()=>{S.endless=true;$('over').classList.add('hidden');showShop('無盡模式開始！主題會循環，難度持續上升。');});
+$('restart').addEventListener('click',()=>{newGame();showShop('已重新開始。');});
+
+/* ---------- 觸控操控：浮動虛擬搖桿 + 閃光燈 / 換卡按鈕 ---------- */
+let touchPref='auto';try{touchPref=localStorage.getItem('camshoot_touch')||'auto';}catch(e){}
+const IS_TOUCH=(typeof matchMedia==='function'&&matchMedia('(pointer:coarse)').matches)||(typeof navigator!=='undefined'&&navigator.maxTouchPoints>0);
+const touchOn=()=>touchPref==='on'||(touchPref==='auto'&&IS_TOUCH);
+function syncTouch(){
+  const on=touchOn()&&mode==='play';$('touch').classList.toggle('hidden',!on);$('touch').classList.toggle('on',on);
+  $('tglTouch').textContent='觸控：'+({auto:'自動',on:'開',off:'關'}[touchPref]);
+}
+{
+  const zone=$('joyZone'),base=$('joyBase'),knob=$('joyKnob');let pid=null,cx=0,cy=0,R=50;
+  const setJoy=(px,py)=>{
+    const dx=px-cx,dy=py-cy,d=Math.hypot(dx,dy),k=d>R?R/d:1,ox=dx*k,oy=dy*k;
+    knob.style.transform='translate(calc(-50% + '+ox+'px),calc(-50% + '+oy+'px))';
+    const m=Math.min(1,d/R);joy.on=m>.12;joy.x=d?dx/d*m:0;joy.y=d?dy/d*m:0;
+  };
+  zone.addEventListener('pointerdown',e=>{
+    if(pid!==null)return;pid=e.pointerId;zone.setPointerCapture(pid);e.preventDefault();ac();
+    const r=$('gameWrap').getBoundingClientRect();cx=e.clientX-r.left;cy=e.clientY-r.top;
+    base.style.display='block';base.style.left=cx+'px';base.style.top=cy+'px';R=Math.max(30,base.getBoundingClientRect().width/2);
+    cx=e.clientX;cy=e.clientY;setJoy(e.clientX,e.clientY);
+  });
+  zone.addEventListener('pointermove',e=>{if(e.pointerId===pid){e.preventDefault();setJoy(e.clientX,e.clientY);}});
+  const end=e=>{if(e.pointerId!==pid)return;pid=null;joy.on=false;joy.x=joy.y=0;base.style.display='none';};
+  zone.addEventListener('pointerup',end);zone.addEventListener('pointercancel',end);
+  $('tFlash').addEventListener('pointerdown',e=>{e.preventDefault();ac();if(mode==='play')throwFlash();});
+  $('tReload').addEventListener('pointerdown',e=>{e.preventDefault();ac();if(mode==='play')startReload();});
+  $('tglTouch').addEventListener('click',()=>{touchPref=touchPref==='auto'?'on':(touchPref==='on'?'off':'auto');try{localStorage.setItem('camshoot_touch',touchPref);}catch(e){}syncTouch();});
+  let wipeT=0;
+  $('wipe').addEventListener('click',()=>{
+    if(Date.now()-wipeT>3000){wipeT=Date.now();$('wipe').textContent='再按一次確認清除';setTimeout(()=>{$('wipe').textContent='清除存檔';},3000);return;}
+    try{localStorage.removeItem(SAVE_KEY);}catch(e){}
+    cheat=false;newGame();$('wipe').textContent='清除存檔';showShop('已清除存檔（含圖鑑），重新開始。');
+  });
+}
+/* ---------- 主迴圈 ---------- */
+function frame(dt){
+  dt=Math.min(dt,.05);
+  if(mode==='play'){update(dt);if(mode==='play')draw();}
+}
+let last=0;
+function loop(ts){
+  const dt=last?(ts-last)/1000:0;last=ts;
+  frame(dt);
+  requestAnimationFrame(loop);
+}
+newGame();
+const loaded=loadGame();
+syncTouch();
+showShop(loaded?'已讀取存檔：已打到第 '+S.wave+' 波，金幣 '+S.gold+'。（只在商店階段自動存檔，戰鬥中途離開會回到本波開始前）':'歡迎！先到商店挑選裝備，準備好就按「開始第 1 波」。你有 300 金幣。');
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
